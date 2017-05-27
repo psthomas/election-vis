@@ -44,13 +44,13 @@
 }
 
 .circle {
-/*    stroke: white;*/
-/*	stroke-width: 0.5px;*/
+   stroke: white;
+	stroke-width: 0.1px;
 	cursor: pointer;
 }
 
 .circle:hover {
-	stroke: white; /*#555;*/
+	/*stroke: white;*/ /*#555;*/
 	fill-opacity: 0.8;
 }
 
@@ -253,7 +253,7 @@ var searchTerms = "";
 
 function handleClick(event){
 	currentSearch = document.getElementById("myVal").value;
-    //console.log(currentSearch);
+    console.log(currentSearch);
     //draw(currentSearchTerm);
     //update(yearData, year);
 
@@ -263,22 +263,40 @@ function handleClick(event){
  	//Modifies global search variable, also used in update()
     searchTerms = RegExp(words.join('|'), "gi");
 
-    console.log(searchTerms);
+    //console.log(searchTerms);
 
 
-    svg.selectAll("circle").attr("fill",function(d){
+    svg.selectAll("circle").each(function(d) {
+    	var circle = d3.select(this);
 
-		if (d.county.search(searchTerms) != -1 ) {   //d.county.search(currentSearch)
-			return colorScale(((d.num_dem-d.num_rep)/d.county_num)*100);
-		}else {
-			return "rgba(192,192,192,0.05)";  //'none'
-		}
-	})
-    .each(function(d) {
+  //   	circle.attr("fill",function(d){
+		// 	if (d.county.search(searchTerms) != -1 ) {   //d.county.search(currentSearch)
+		// 		return colorScale(((d.num_dem-d.num_rep)/d.county_num)*100);
+		// 	}else {
+		// 		return "rgba(192,192,192,0.05)";  //'none'
+		// 	}
+		// });
+
+
     	if ( (d.county.search(searchTerms) != -1) || (currentSearch == "") ) { 
-    		d3.select(this).style('pointer-events', 'auto')  //.on("mousover", tooltipOn);  console.log(d);
-    	}  
-		else {d3.select(this).style('pointer-events', 'none')  }  //.on("mouseover", null);
+    		//d3.select(this).style('pointer-events', 'auto')  //.on("mousover", tooltipOn);  console.log(d);
+    		circle.style('pointer-events', 'auto');
+    		circle.attr("fill", colorScale(((d.num_dem-d.num_rep)/d.county_num)*100));
+    		circle.style("stroke-opacity", 1);
+    	} else {
+    		circle.style('pointer-events', 'none');
+    		circle.attr("fill", "rgba(192,192,192,0.05)");
+    		circle.style("stroke-opacity", 0);
+    	}  //.on("mouseover", null);
+
+	// .attr("fill",function(d){
+
+	// 	if (d.county.search(searchTerms) != -1 ) {   //d.county.search(currentSearch)
+	// 		return colorScale(((d.num_dem-d.num_rep)/d.county_num)*100);
+	// 	}else {
+	// 		return "rgba(192,192,192,0.05)";  //'none'
+	// 	}
+	// })
 
     });
 
