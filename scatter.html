@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Election: Wisconsin 2016</title>
+<!--<script type="text/javascript" src="../d3/d3.v3.min.js"></script>-->
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<style type="text/css">
+
+	
+.axis {
+  font: 12px sans-serif;   
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #aaa; 
+  shape-rendering: crispEdges;
+}
+
+.axis text {
+  fill: #858585;
+}
+
+.title {
+  font: 500 100px serif; /*180px "Helvetica Neue"*/
+  fill: #e5e5e5;
+}
+
+.party {
+  font: 500 35px serif; /*180px "Helvetica Neue" "PT Sans"*/
+  fill: #e5e5e5;
+}
+
+.incr {
+  font: 500 35px serif;  /* sans-serif"Helvetica Neue"; 55px + - */
+  fill: #e5e5e5; 
+  cursor: pointer;
+}
+
+.incr:hover {
+  fill: #ccc;
+}
+
+.circle {
+/*    stroke: white;*/
+/*	stroke-width: 0.5px;*/
+	cursor: pointer;
+}
+
+.circle:hover {
+	stroke: white; /*#555;*/
+	fill-opacity: 0.8;
+}
+
+svg {
+  margin-top: 2.5em;
+  margin-bottom: 2.5em;
+}
+
+form {
+  position: absolute;
+  right: 50px;
+  top: 50px;
+  /*display:inline;*/
+}
+
+/*#search {
+  border-radius: 0px;
+  background-color: white;
+  border: 1px solid #ddd;
+}*/
+
+
+.tooltip {
+  /*border: 1px solid #999;*/
+  /*line-height: 1;*/
+  font: 16px serif;/*18px serif "Helvetica Neuesans-serif;  "PT Sans"*/
+  /*font-weight: bold;*/
+  /*padding: 5px;*/ 
+  /*background: #fcfcfa;*/ /*rgba(0, 0, 0, 0.8) */ 
+  color: #999;   /*#fff #888; #999*/
+  /*border-radius: 2px;*/
+  /*max-width: 1000px;*/
+}
+
+body {
+  /*background: #f5f5f1;*/
+  color: #888;  /*#aaa;*/
+  font-family: "PT Serif", serif;
+  /*1em auto 4em auto;*/  
+/*margin: 50px 150px; 
+  position: relative;
+  width: 960px;*/
+}
+
+body > p, li > p {
+  line-height: 1.5em;
+}
+
+body > p {
+  width: 800px;
+}
+
+
+</style>
+</head>
+
+<body>
+
+
+<div id="formholder">
+<form name="myform" onSubmit="return handleClick()" >   <!--action="#"-->
+        <input type="text" id="myVal" size="30" placeholder="Georgia, Los Angeles County, Iowa">
+        <input id="search" name="Submit"  type="submit" value="Search" >
+        <!-- <input type="reset" value="Reset" onclick="document.myform.submit;"> -->
+        <!-- <input type="button" value="Reset" onclick="document.myform.reset(); document.myform.submit();"> -->
+        <input type="button" value="Reset" onclick="document.myform.reset(); handleClick();">
+</form>
+</div> 
+
+
+<script type="text/javascript">
+
+//Todo:
+// Add electoral college sum, change based on county drag
+// 
+
+
+
+var margin = {top: 20, right: 20, bottom: 50, left: 30},  
+	// width = 1100 - margin.left - margin.right,
+	// height = 600 - margin.top - margin.bottom;
+	// width = 850 - margin.left - margin.right,
+	// height = 450 - margin.top - margin.bottom;
+	width = 0.95*window.innerWidth - margin.left - margin.right,   //window.innerWidth
+	height = 0.9*window.innerHeight - margin.top - margin.bottom;
+
+
+
+//Formatting Functions
+var pctFormat = d3.format(".2%")
+var thsdFormat = d3.format(",")
+
+//Create SVG
+var svg = d3.select("body").append("svg")
+	.attr("width", width + margin.left + margin.right)
+	.attr("height", height + margin.top + margin.bottom)
+	//.attr("style", "outline: 1.5px solid #e5e5e5;")
+	.append("g")
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+//Year Title
+var title = svg.append("text")
+    .attr("class", "title")
+    .attr("dy", height-10)  
+    .attr("dx", ".35em");  
+
+var demtext = svg.append("text")
+    .attr("class", "party")
+    .attr("dy", height-50)  
+    .attr("dx", 243);  
+
+
+var reptext = svg.append("text")
+    .attr("class", "party")
+    .attr("dy", height-14)  
+    .attr("dx", 243);  
+
+
+//Define static scales
+var xScale = d3.scaleLinear()
+	.domain([-100, 100])   //-100, 100
+	.range([0, width]);
+
+var yScale = d3.scaleLinear()
+	.domain([0, 100])  //Max margin is 100
+	.range([height, 0]);
+
+
+//Base the color scale on the democratic margin.  
+var colorScale = d3.scaleLinear()
+	.domain([-80, 0, 80])
+	//.domain([d3.min(...), 0, d3.max(data, function(d) {return d.; })])
+	//.range(['#FF0000', '#FFFFFF', '#0000FF'])
+	//.range(['#EF3B2C', '#FFFFFF', '#08519C'])
+	//.range(['#EF3B2C', '#dadada', '#08519C'])
+	//.range(['#EF3B2C', '#08519C'])
+	.range(['#EF3B2C', '#885ead', '#08519C'])  //#9975b9  #885ead  #aa8cc5
+	.interpolate(d3.interpolateRgb);  
+
+//Define x, y axes
+var xAxis = d3.axisBottom(xScale);
+var yAxis = d3.axisLeft(yScale);
+
+//Append Axes
+svg.append("g")
+	.attr("class", "axis")
+	.attr("transform", "translate(0," + height + ")")
+	.call(xAxis)
+	.append("text")
+	.attr("y", "3em")
+	.attr("x", width/2)
+	.text("Democratic Margin (%)");
+
+svg.append("g")
+	.attr("class", "axis")
+	.call(yAxis)
+	.attr("transform", "translate(" + (width/2) + ",0)")
+	.append("text")
+	.attr("transform", "rotate(-90)")
+	.attr("y", 6)
+	.attr("dy", "-3.75em")  
+	.style("text-anchor", "end")
+	.text("Turnout (%VAP)");
+
+
+//Statically place tooltip:
+//http://stackoverflow.com/questions/30051141
+var tooltip = d3.select("body")
+	.append("div")    
+	.style("position", "absolute")
+	.style("visibility", "hidden")
+	// .style("left", width/2 + margin.left + 8 + "px")
+	// .style("top", height - margin.bottom + 8 + "px")
+	.style("left", width/2 + margin.left + 8 + "px")
+	.style("top", height - margin.bottom/3 + "px")
+	.attr("class", "tooltip");
+
+
+function tooltipOn(d) {
+	//Transition might prevent mouseout from registering
+	// tooltip.transition()
+	// 	.duration(500)
+	// 	.style("visibility", "visible");
+	//"Turnout: " + pctFormat((d.num_rep+d.num_dem)/(d.county_num/d.turnout))
+	//d.county_num + "," + d.turnout + "," + d.vap
+	tooltip.style("visibility", "visible")
+		.html(
+		d.county + "<br>" +
+		"D: " + pctFormat(d.num_dem/d.county_num) +
+		" R: " + pctFormat(d.num_rep/d.county_num) + "<br>" +
+		"Turnout: " + pctFormat(d.turnout) + "<br>" +
+		"Voters: " + thsdFormat(Math.round(d.county_num)) + "<br>" );
+		//"VAP: " + thsdFormat(d.vap)); 
+}
+
+
+var currentSearch = "";
+var searchTerms = "";
+
+function handleClick(event){
+	currentSearch = document.getElementById("myVal").value;
+    //console.log(currentSearch);
+    //draw(currentSearchTerm);
+    //update(yearData, year);
+
+    //var search="";
+    var words = currentSearch.split(",").map(function(s) { return s.trim() });  
+
+ 	//Modifies global search variable, also used in update()
+    searchTerms = RegExp(words.join('|'), "gi");
+
+    console.log(searchTerms);
+
+
+    svg.selectAll("circle").attr("fill",function(d){
+
+		if (d.county.search(searchTerms) != -1 ) {   //d.county.search(currentSearch)
+			return colorScale(((d.num_dem-d.num_rep)/d.county_num)*100);
+		}else {
+			return "rgba(192,192,192,0.05)";  //'none'
+		}
+	})
+    .each(function(d) {
+    	if ( (d.county.search(searchTerms) != -1) || (currentSearch == "") ) { 
+    		d3.select(this).style('pointer-events', 'auto')  //.on("mousover", tooltipOn);  console.log(d);
+    	}  
+		else {d3.select(this).style('pointer-events', 'none')  }  //.on("mouseover", null);
+
+    });
+
+	// .on("mouseover", function(d) {
+	// 	if (d.county.search(searchTerms) != -1 ) {console.log("entered"); return tooltipOn; }
+	// 	else {return null; }
+	// });
+
+
+
+	//.on("mouseover", null)
+	// .transition()
+	// .duration(1000);
+
+	return false; //Don't reload page
+}
+
+
+function parseRows(d) {
+	return {'county': d.county, 'county_num': +d.county_num, 'turnout': +d.turnout,
+		   'num_rep': +d.num_rep, 'num_dem': +d.num_dem, 'year': +d.year, 
+		   'vap': +d.vap, 'dem_margin': ((d.num_dem-d.num_rep)/d.county_num)*100};
+}
+//Need to recalculate dem_margin each time, as it's based on 
+
+//./US_County_Level_Presidential_Results_08-16_nofilter.csv'
+///US_County_Level_Presidential_Results_08-16.csv  filters out turnout > 100%
+
+d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(error, data) {
+
+	if (error) {throw error};
+
+	var dataset = d3.nest()
+		.key(function(d) { return +d.year; })
+		.sortValues(function(a,b) { return b.county_num - a.county_num; } )  //Bring smallest to front
+		.entries(data);
+
+	// var vectorData = d3.nest()
+	// 	.key(function(d) {return d.county})
+	// 	.entries(data); //
+
+	// console.log(vectorData);
+
+
+	var years = [];
+	for (var i=0; i<dataset.length; i++) {
+		years.push(+dataset[i].key)
+	}
+	var year = years[0];
+
+	//Create a copy, so it can be edited on drag:
+	//var yearData = Object.assign({}, getYearData(dataset, year));
+	var yearData = copyObj(getYearData(dataset, year));
+
+
+	//Data is just array of all objects from csv
+	var rScale = d3.scaleLinear()
+		.domain([0, d3.max(data, function(d) {return d.county_num; })])
+		.range([2, 60]);
+
+
+	//Append increment buttons
+	var incr = svg.append("text")
+		.attr("class", "incr")
+		.attr("dy", height-43) // 1em
+		.attr("dx", 0)  //.5em
+		.html("&#9650;")
+		.on("click", function() {
+			year += 4;
+			if (year > years[years.length - 1]) {
+				year = years[0]
+			}
+			//Assign to new object, update circles:
+			yearData = copyObj(getYearData(dataset, year));
+			update(yearData, year);
+		});
+
+	var decr = svg.append("text")
+		.attr("class", "incr")
+		.attr("dy", height-10)
+		.attr("dx", 0)  //".5em"
+		.html("&#9660;")
+		.on("click", function() {
+			year -= 4;
+			if (year < years[0]) {
+				year = years[years.length - 1];
+			} 
+			//Assign to new object, update:
+			yearData = copyObj(getYearData(dataset, year));
+			update(yearData, year);
+		});
+
+
+	//Dragging behavior
+	//https://bl.ocks.org/mbostock/6123708
+	var drag = d3.drag()
+	    .on("drag", dragged)
+	    .on("end", ended);
+
+
+	function dragged(d) {
+		//Remove transitions temporarily
+		d3.selectAll("circle").transition();
+
+		//Issue when dragged across 0 threshold, county_num = 0
+		if (d3.event.y >= height) {
+			return;
+		}
+
+		//Relocate circle with mouse
+		d3.select(this).attr("cx", d.x = d3.event.x).attr("cy", d.y = d3.event.y);
+		
+		//Avoid case of no shift
+		if (d.x === undefined || d.y === undefined) {
+			return;
+		}
+
+
+		var newMargin = xScale.invert(d.x)/100,
+			newTurnout = yScale.invert(d.y)/100,  //Math.abs()  d.y
+			oldMargin = (d.num_dem-d.num_rep)/d.county_num,
+			marginChange = newMargin-oldMargin, 
+			dfrac = d.num_dem/d.county_num,
+			rfrac = d.num_rep/d.county_num;
+
+		//Recalculate fractions based on margin change
+		//Half goes to each side, zero sum
+		dfrac += marginChange/2;   
+		rfrac -= marginChange/2;
+
+		//Add increses in turnout to county_num
+		//Assume change in turnout affects D&R equally
+		//d.county_num = newTurnout*vap;
+		d.county_num = newTurnout*d.vap;
+
+
+		// Recalculate based on margin change first, assumes
+		// margin changes are zero sum between parties.
+		d.num_dem = dfrac*d.county_num;
+		d.num_rep = rfrac*d.county_num;
+		d.turnout =  newTurnout;
+
+		//Call the tooltip function each time to update.  
+		tooltipOn(d);
+		//Update score as well:
+		updateScore(yearData);
+		//Wait to update circles until ended below
+		//update(yearData, d.year);
+	}
+
+	function ended(d) {
+		//Update circle radius, color at end of drag.  
+		update(yearData, d.year);
+
+	}
+
+	function updateScore(yearData) {
+
+		//Could get this data directly from dataframe,
+		//but want to calculate so can be updated easily on drag.   
+		var sums = [0,0,0];
+		for (var i=0; i<yearData.length; i++) {
+			sums[0] += yearData[i].num_dem;
+			sums[1] += yearData[i].num_rep;
+			sums[2] += yearData[i].county_num;
+		}
+
+		var dfrac = sums[0]/sums[2],
+			rfrac = sums[1]/sums[2];
+
+		//update dfrac rfrac text, update color background
+		demtext.text('D ' + pctFormat(dfrac))  
+		reptext.text('R ' + pctFormat(rfrac)) 
+
+
+		//demtext.style('color', 'red')
+		if (dfrac > rfrac) {
+			demtext.style('fill', '#bbb');
+			reptext.style('fill', null);
+		} else {
+			demtext.style('fill', null);
+			reptext.style('fill', '#bbb');
+		}
+
+		//Optional, set background color based on winner
+		// var backColor = dfrac > rfrac ? colorScale(5) : colorScale(-5);
+		// //var backColor = colorScale((dfrac-rfrac)*100);
+		// d3.selectAll('svg')
+		// 	.style('background-color', backColor);
+	}
+
+
+	function update(yearData, year) {
+
+		//Change D,R scores:
+		updateScore(yearData);
+
+		//Update title
+		title.text(year);
+
+		//Create any new circles
+		// var circles = svg.selectAll("circle")
+		// 	.data(yearData)
+		// 	.enter().append("circle")
+		// 	.attr("class", "circle")
+		// 	.attr("cx", function(d) {
+		// 		return xScale(((d.num_dem-d.num_rep)/d.county_num)*100);
+		// 	})
+		// 	.attr("cy", function(d) {
+		// 		return yScale(d.turnout*100);
+		// 	})
+		// 	.attr("r", function(d) {
+		// 		return rScale(d.county_num);
+		// 	})
+		// 	.attr("fill",function(d){
+		// 		return colorScale(((d.num_dem-d.num_rep)/d.county_num)*100);
+		// 	})
+		// 	.call(drag)
+		// 	.on("mouseover", tooltipOn)
+		// 	.on("mouseout", function(d){return tooltip.style("visibility", "hidden");});
+
+
+		var circles = svg.selectAll("circle")
+			.data(yearData, function(d) { return d.county; });  //includes key function for object constancy: https://bost.ocks.org/mike/constancy/
+			// .call(drag)
+			// .on("mouseover", tooltipOn)
+			// .on("mouseout", function(d){return tooltip.style("visibility", "hidden");});
+
+		circles.exit().remove();
+
+		//console.log(circles);
+
+		circles.enter().append("circle")
+			.on("mouseover", tooltipOn) //Add tooltip before transition
+			.on("mouseout", function(d){return tooltip.style("visibility", "hidden");})
+			.call(drag)
+			.attr("class", "circle")
+			.merge(circles)
+			.transition()
+			.duration(1000) //750;
+			//.ease(d3.easeLinear)
+			// .tween("lineDraw", function() {
+			// 	var curX = this.x
+			// })
+			.attr("cx", function(d) {
+				return xScale(((d.num_dem-d.num_rep)/d.county_num)*100);
+			})
+			.attr("cy", function(d) {
+				return yScale(d.turnout*100);
+			})
+			.attr("r", function(d) {
+				return rScale(d.county_num);
+			})
+			.attr("fill",function(d){
+
+				//console.log(d.county.search(currentSearch));
+				//console.log(search);
+
+				if (d.county.search(searchTerms) != -1 ) {   //d.county.search(currentSearch) != -1
+					return colorScale(((d.num_dem-d.num_rep)/d.county_num)*100);
+				}else {
+					return "rgba(192,192,192,0.05)";  //'none'
+				}
+			});
+			// .on("mouseover", tooltipOn)
+			// .on("mouseout", function(d){return tooltip.style("visibility", "hidden");})
+			// .call(drag);
+			// .on("mouseover", function(d) {
+			// 	if (d.county.search(searchTerms) != -1 ) { return null; }
+			// 	else {return tooltipOn;}
+			// });
+			// .on("mouseout", function(d){return tooltip.style("visibility", "hidden");});;
+
+
+
+		// circles.transition().duration(1500) //750;
+			
+		// circles.on("mouseover", tooltipOn)
+		// 	.on("mouseout", function(d){return tooltip.style("visibility", "hidden");});
+
+
+		//Update circles
+		// svg.selectAll("circle").data(yearData)
+		// 	.transition()
+		// 	.duration(750)
+		// 	.attr("class", "circle")
+		// 	.attr("cx", function(d) {
+		// 		return xScale(((d.num_dem-d.num_rep)/d.county_num)*100);
+		// 	})
+		// 	.attr("cy", function(d) {
+		// 		return yScale(d.turnout*100);
+		// 	})
+		// 	.attr("r", function(d) {
+		// 		return rScale(d.county_num);
+		// 	})
+		// 	.attr("fill",function(d){
+		// 		return colorScale(((d.num_dem-d.num_rep)/d.county_num)*100);
+		// 	});
+
+		//var prevYear = years[years.indexOf(year) - 1];
+
+
+
+
+	
+	}
+
+
+
+	function initialize(yearData, year) {
+
+		//Change D,R scores:
+		updateScore(yearData);
+
+		//Update title
+		title.text(year);
+
+		//Create any new circles
+		var circles = svg.selectAll("circle")
+			.data(yearData, function(d) { return d.county; })
+			.enter().append("circle")
+			.attr("class", "circle")
+			.attr("cx", function(d) {
+				return xScale(((d.num_dem-d.num_rep)/d.county_num)*100);
+			})
+			.attr("cy", function(d) {
+				return yScale(d.turnout*100);
+			})
+			.attr("r", function(d) {
+				return rScale(d.county_num);
+			})
+			.attr("fill",function(d){
+				return colorScale(((d.num_dem-d.num_rep)/d.county_num)*100);
+			})
+			.call(drag)
+			.on("mouseover", tooltipOn)
+			.on("mouseout", function(d){return tooltip.style("visibility", "hidden");});
+
+
+	}		
+
+
+	//Initialize scatterplot
+	//update(yearData, year);
+	initialize(yearData, year);
+
+
+
+	// Helper functions: 
+	function copyObj(original) {
+		return JSON.parse(JSON.stringify(original));
+	}
+
+	function getYearData(dataset, year) {
+		for (var i=0; i<dataset.length; i++) {
+			if (Number(dataset[i].key) === year) {
+				return dataset[i].values;
+			}
+		}
+	}
+
+
+
+
+});
+</script>
+</body>
+</html>
