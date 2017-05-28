@@ -80,7 +80,7 @@ form {
   /*font-weight: bold;*/
   /*padding: 5px;*/ 
   /*background: #fcfcfa;*/ /*rgba(0, 0, 0, 0.8) */ 
-  color: #999;   /*#fff #888; #999*/
+  color: #888;   /*#fff #888; #999*/
   /*border-radius: 2px;*/
   /*max-width: 1000px;*/
 }
@@ -111,9 +111,10 @@ body > p {
 
 
 <div id="formholder">
-<form name="myform" onSubmit="return handleClick()" >   <!--action="#"-->
-        <input type="text" id="myVal" size="30" placeholder="Georgia, Los Angeles County, Iowa">
-        <input id="search" name="Submit"  type="submit" value="Search" >
+<form name="myform" onSubmit="return handleClick()" >   <!--action="#"  Georgia, Los Angeles County, Iowa-->
+        <input type="text" id="myVal" size="30" placeholder="NY, WI, Los Angeles County">
+    	<!-- <input type="text" id="myVal" size="30" placeholder="State"> -->
+        <input id="search" name="Submit" type="button"  onclick="handleClick();" value="Search" >  <!--type="submit"-->
         <!-- <input type="reset" value="Reset" onclick="document.myform.submit;"> -->
         <!-- <input type="button" value="Reset" onclick="document.myform.reset(); document.myform.submit();"> -->
         <input type="button" value="Reset" onclick="document.myform.reset(); handleClick();">
@@ -225,8 +226,11 @@ var tooltip = d3.select("body")
 	.style("visibility", "hidden")
 	// .style("left", width/2 + margin.left + 8 + "px")
 	// .style("top", height - margin.bottom + 8 + "px")
-	.style("left", width/2 + margin.left + 8 + "px")
-	.style("top", height - margin.bottom/3 + "px")
+	//.style("left", width/2 + margin.left + 8 + "px")
+	//.style("top", height - margin.bottom/3 + "px")
+	//.style("right", "80px")
+	.style("left", width - 235 + "px")
+	.style("top", "80px")
 	.attr("class", "tooltip");
 
 
@@ -257,11 +261,15 @@ function handleClick(event){
     //draw(currentSearchTerm);
     //update(yearData, year);
 
+
+
     //var search="";
     var words = currentSearch.split(",").map(function(s) { return s.trim() });  
 
  	//Modifies global search variable, also used in update()
-    searchTerms = RegExp(words.join('|'), "gi");
+ 	searchTerms = RegExp(words.join('|'), "g");  // gi is case insensitive global, g is just global
+    //countyTerms = RegExp(words.join('|'), "g");  // gi is case insensitive global -- no, still won't work because the county terms will contain the state terms still, and will match any counties with the lowercase state inputs
+    //stateTerms = RegExp(words.join('|'), "g");  //remove i so case sensitive, MI won't match mi
 
     //console.log(searchTerms);
 
@@ -277,6 +285,8 @@ function handleClick(event){
 		// 	}
 		// });
 
+    	//(d.state.search(stateTerms) != -1)
+    	//if ( (d.county.search(searchTerms) != -1) || (d.state.search(searchTerms) != -1) || (currentSearch == "") ) 
 
     	if ( (d.county.search(searchTerms) != -1) || (currentSearch == "") ) { 
     		//d3.select(this).style('pointer-events', 'auto')  //.on("mousover", tooltipOn);  console.log(d);
@@ -316,9 +326,10 @@ function handleClick(event){
 
 
 function parseRows(d) {
-	return {'county': d.county, 'county_num': +d.county_num, 'turnout': +d.turnout,
+	//console.log(d);
+	return {'county': d.county + ', ' + d.state, 'state': d.state, 'county_num': +d.county_num, 'turnout': +d.turnout,
 		   'num_rep': +d.num_rep, 'num_dem': +d.num_dem, 'year': +d.year, 
-		   'vap': +d.vap, 'dem_margin': ((d.num_dem-d.num_rep)/d.county_num)*100};
+		   'vap': +d.vap, 'fips_code': +d.fips_code, 'dem_margin': ((d.num_dem-d.num_rep)/d.county_num)*100};
 }
 //Need to recalculate dem_margin each time, as it's based on 
 
@@ -328,6 +339,8 @@ function parseRows(d) {
 d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(error, data) {
 
 	if (error) {throw error};
+
+	//console.log(data);
 
 	var dataset = d3.nest()
 		.key(function(d) { return +d.year; })
@@ -520,7 +533,7 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 
 
 		var circles = svg.selectAll("circle")
-			.data(yearData, function(d) { return d.county; });  //includes key function for object constancy: https://bost.ocks.org/mike/constancy/
+			.data(yearData, function(d) { return d.fips_code ; });  // d.county includes key function for object constancy: https://bost.ocks.org/mike/constancy/
 			// .call(drag)
 			// .on("mouseover", tooltipOn)
 			// .on("mouseout", function(d){return tooltip.style("visibility", "hidden");});
@@ -555,7 +568,7 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 				//console.log(d.county.search(currentSearch));
 				//console.log(search);
 
-				if (d.county.search(searchTerms) != -1 ) {   //d.county.search(currentSearch) != -1
+				if (d.county.search(searchTerms) != -1) {   //d.county.search(currentSearch) != -1
 					return colorScale(((d.num_dem-d.num_rep)/d.county_num)*100);
 				}else {
 					return "rgba(192,192,192,0.05)";  //'none'
@@ -616,7 +629,7 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 
 		//Create any new circles
 		var circles = svg.selectAll("circle")
-			.data(yearData, function(d) { return d.county; })
+			.data(yearData, function(d) { return d.fips_code; })
 			.enter().append("circle")
 			.attr("class", "circle")
 			.attr("cx", function(d) {
