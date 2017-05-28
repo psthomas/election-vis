@@ -137,6 +137,7 @@ var margin = {top: 20, right: 20, bottom: 50, left: 30},
 	// height = 450 - margin.top - margin.bottom;
 	width = 0.95*window.innerWidth - margin.left - margin.right,   //window.innerWidth
 	height = 0.9*window.innerHeight - margin.top - margin.bottom;
+	//width = height;
 
 
 
@@ -367,8 +368,8 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 
 	//Data is just array of all objects from csv
 	var rScale = d3.scaleLinear()
-		.domain([0, d3.max(data, function(d) {return d.county_num; })])
-		.range([2, 60]);
+		.domain([0, d3.max(data, function(d) {return Math.sqrt(d.county_num/Math.PI); })])  //Math.sqrt(d.county_num/Math.PI)
+		.range([2, 30]);  //2,60
 
 
 	//Append increment buttons
@@ -561,7 +562,7 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 				return yScale(d.turnout*100);
 			})
 			.attr("r", function(d) {
-				return rScale(d.county_num);
+				return rScale(Math.sqrt(d.county_num/Math.PI));   // d.county_num Math.pow(d.county_num, 0.6)   Math.sqrt(d.county_num/Math.PI)  Math.sqrt(d *4/Math.PI)
 			})
 			.attr("fill",function(d){
 
@@ -639,7 +640,7 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 				return yScale(d.turnout*100);
 			})
 			.attr("r", function(d) {
-				return rScale(d.county_num);
+				return rScale(Math.sqrt(d.county_num/Math.PI));   //d.county_num   Math.sqrt(d.county_num/Math.PI)
 			})
 			.attr("fill",function(d){
 				return colorScale(((d.num_dem-d.num_rep)/d.county_num)*100);
