@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Election: Wisconsin 2016</title>
+<title>National Elections</title>
 <!--<script type="text/javascript" src="../d3/d3.v3.min.js"></script>-->
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <style type="text/css">
@@ -59,10 +59,17 @@ svg {
   margin-bottom: 2.5em;
 }
 
-form {
+#searchform {
   position: absolute;
   right: 50px;
   top: 50px;
+  /*display:inline;*/
+}
+
+#areaform {
+  position: absolute;
+  right: 50px;
+  top: 25px;
   /*display:inline;*/
 }
 
@@ -110,8 +117,18 @@ body > p {
 <body>
 
 
-<div id="formholder">
-<form name="myform" onSubmit="return handleClick()" >   <!--action="#"  Georgia, Los Angeles County, Iowa-->
+<!-- onclick="return updateAreas();" -->
+
+<div id="formholder" >  
+<form id="areaform">
+		Area Weighting: &nbsp;
+		<input type="radio" name="area" value="vote"  checked> Voters &nbsp;
+  		<input type="radio" name="area" value="electoral" > Electoral<br>
+</form>
+<form id="searchform" name="myform" onSubmit="return handleClick()" >   <!--action="#"  Georgia, Los Angeles County, Iowa-->
+<!-- 		Area: &nbsp;
+		<input type="radio" name="number" value="Vote Number" onclick="updateAreas();" checked> Male &nbsp;
+  		<input type="radio" name="electoral" value="Electoral Votes" onclick="updateAreas();"> Female<br> -->
         <input type="text" id="myVal" size="30" placeholder="NY, WI, Los Angeles County">
     	<!-- <input type="text" id="myVal" size="30" placeholder="State"> -->
         <input id="search" name="Submit" type="button"  onclick="handleClick();" value="Search" >  <!--type="submit"-->
@@ -258,7 +275,7 @@ var searchTerms = "";
 
 function handleClick(event){
 	currentSearch = document.getElementById("myVal").value;
-    console.log(currentSearch);
+    //console.log(currentSearch);
     //draw(currentSearchTerm);
     //update(yearData, year);
 
@@ -329,8 +346,9 @@ function handleClick(event){
 function parseRows(d) {
 	//console.log(d);
 	return {'county': d.county + ', ' + d.state, 'state': d.state, 'county_num': +d.county_num, 'turnout': +d.turnout,
-		   'num_rep': +d.num_rep, 'num_dem': +d.num_dem, 'year': +d.year, 
-		   'vap': +d.vap, 'fips_code': +d.fips_code, 'dem_margin': ((d.num_dem-d.num_rep)/d.county_num)*100};
+		   'num_rep': +d.num_rep, 'num_dem': +d.num_dem, 'year': +d.year, 'state_electoral_votes': +d.state_electoral_votes, 
+		   'vap': +d.vap, 'fips_code': +d.fips_code, 'dem_margin': ((d.num_dem-d.num_rep)/d.county_num)*100,
+			'num_state': +d.num_state};
 }
 //Need to recalculate dem_margin each time, as it's based on 
 
@@ -369,7 +387,16 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 	//Data is just array of all objects from csv
 	var rScale = d3.scaleLinear()
 		.domain([0, d3.max(data, function(d) {return Math.sqrt(d.county_num/Math.PI); })])  //Math.sqrt(d.county_num/Math.PI)
-		.range([2, 30]);  //2,60
+		.range([1, 40]);  //2,60  2, 30
+
+	var rScale_electoral = d3.scaleLinear()
+		.domain([0, d3.max(data, function(d) {
+			//console.log(d.county_num/d.num_state);
+			//console.log((d.county_num/d.state_num)*d.state_electoral_votes);
+			//console.log(Math.sqrt((d.county_num/d.state_num)*d.state_electoral_votes/Math.PI));
+			return Math.sqrt((d.county_num/d.num_state)*d.state_electoral_votes/Math.PI);   //Area proportional to electoral votes
+		})])  
+		.range([1, 40]);  //2,60  2, 30
 
 
 	//Append increment buttons
@@ -402,6 +429,30 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 			yearData = copyObj(getYearData(dataset, year));
 			update(yearData, year);
 		});
+
+
+	function updateAreas(event){
+
+		var checked = document.querySelector('input[name="area"]:checked').value;
+		//console.log(event);
+		d3.selectAll("circle").transition()
+			.duration(1000) //750;
+			.attr("r", function(d) {
+
+				if (checked === "electoral") {
+					return rScale_electoral(Math.sqrt((d.county_num/d.num_state)*d.state_electoral_votes/Math.PI));  // d.county_num Math.pow(d.county_num, 0.6)   Math.sqrt(d.county_num/Math.PI)  Math.sqrt(d *4/Math.PI)
+				} else {
+					return rScale(Math.sqrt(d.county_num/Math.PI));
+				}
+
+			});
+
+	}
+
+	d3.select("#areaform")
+	 .on("click", function () {
+	   return updateAreas();
+	});
 
 
 	//Dragging behavior
@@ -465,6 +516,8 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 		//Update circle radius, color at end of drag.  
 		update(yearData, d.year);
 
+		//TODO: Try updating size of circles if electoral is checked
+
 	}
 
 	function updateScore(yearData) {
@@ -494,6 +547,10 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 			demtext.style('fill', null);
 			reptext.style('fill', '#bbb');
 		}
+
+
+		//TODO: Try updating electoral college scores in real time? Maybe only if 
+		// 		state vote threshold has passed from D to R
 
 		//Optional, set background color based on winner
 		// var backColor = dfrac > rfrac ? colorScale(5) : colorScale(-5);
@@ -650,13 +707,7 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 			.on("mouseout", function(d){return tooltip.style("visibility", "hidden");});
 
 
-	}		
-
-
-	//Initialize scatterplot
-	//update(yearData, year);
-	initialize(yearData, year);
-
+	}
 
 
 	// Helper functions: 
@@ -671,6 +722,11 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 			}
 		}
 	}
+
+
+	//Initialize scatterplot
+	//update(yearData, year);
+	initialize(yearData, year);
 
 
 
