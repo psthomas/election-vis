@@ -62,14 +62,14 @@ svg {
 #searchform {
   position: absolute;
   right: 50px;
-  top: 50px;
+  top: 25px;
   /*display:inline;*/
 }
 
 #areaform {
   position: absolute;
   right: 50px;
-  top: 25px;
+  top: 50px;
   /*display:inline;*/
 }
 
@@ -83,7 +83,8 @@ svg {
 .tooltip {
   /*border: 1px solid #999;*/
   /*line-height: 1;*/
-  font: 16px serif;/*18px serif "Helvetica Neuesans-serif;  "PT Sans"*/
+  font: 15px serif;/*18px serif "Helvetica Neuesans-serif;  "PT Sans"*/
+  /*text-align:right;*/
   /*font-weight: bold;*/
   /*padding: 5px;*/ 
   /*background: #fcfcfa;*/ /*rgba(0, 0, 0, 0.8) */ 
@@ -96,6 +97,7 @@ body {
   /*background: #f5f5f1;*/
   color: #888;  /*#aaa;*/
   font-family: "PT Serif", serif;
+  font-size:15px;
   /*1em auto 4em auto;*/  
 /*margin: 50px 150px; 
   position: relative;
@@ -120,11 +122,6 @@ body > p {
 <!-- onclick="return updateAreas();" -->
 
 <div id="formholder" >  
-<form id="areaform">
-		Area Weighting: &nbsp;
-		<input type="radio" name="area" value="vote"  checked> Voters &nbsp;
-  		<input type="radio" name="area" value="electoral" > Electoral<br>
-</form>
 <form id="searchform" name="myform" onSubmit="return handleClick()" >   <!--action="#"  Georgia, Los Angeles County, Iowa-->
 <!-- 		Area: &nbsp;
 		<input type="radio" name="number" value="Vote Number" onclick="updateAreas();" checked> Male &nbsp;
@@ -134,7 +131,13 @@ body > p {
         <input id="search" name="Submit" type="button"  onclick="handleClick();" value="Search" >  <!--type="submit"-->
         <!-- <input type="reset" value="Reset" onclick="document.myform.submit;"> -->
         <!-- <input type="button" value="Reset" onclick="document.myform.reset(); document.myform.submit();"> -->
-        <input type="button" value="Reset" onclick="document.myform.reset(); handleClick();">
+        <input type="button" value="&#8634;" onclick="document.myform.reset(); handleClick();">
+</form>
+<form id="areaform">
+		Weight: &nbsp;
+		<input type="radio" name="area" value="vote"  checked> Vote &nbsp;
+  		<input type="radio" name="area" value="electoral" > Electoral &nbsp;
+  		<input type="radio" name="area" value="vpi" > VPI<br>
 </form>
 </div> 
 
@@ -246,9 +249,9 @@ var tooltip = d3.select("body")
 	// .style("top", height - margin.bottom + 8 + "px")
 	//.style("left", width/2 + margin.left + 8 + "px")
 	//.style("top", height - margin.bottom/3 + "px")
-	//.style("right", "80px")
-	.style("left", width - 235 + "px")
-	.style("top", "80px")
+	.style("right", "128px") //80ps
+	//.style("left", width - 235 + "px")
+	.style("top", "73px")
 	.attr("class", "tooltip");
 
 
@@ -261,11 +264,13 @@ function tooltipOn(d) {
 	//d.county_num + "," + d.turnout + "," + d.vap
 	tooltip.style("visibility", "visible")
 		.html(
-		d.county + "<br>" +
-		"D: " + pctFormat(d.num_dem/d.county_num) +
+		 d.county + "<br>" +
+		"County: D: " + pctFormat(d.num_dem/d.county_num) +
 		" R: " + pctFormat(d.num_rep/d.county_num) + "<br>" +
 		"Turnout: " + pctFormat(d.turnout) + "<br>" +
-		"Voters: " + thsdFormat(Math.round(d.county_num)) + "<br>" );
+		"Voters: " + thsdFormat(Math.round(d.county_num)) + "<br>" + 
+		"State: D: " + pctFormat(d.num_state_dem/d.num_state) +
+		" R: " + pctFormat(d.num_state_rep/d.num_state) +  "<br>" ); //" num: " + thsdFormat(d.num_state) + 
 		//"VAP: " + thsdFormat(d.vap)); 
 }
 
@@ -348,7 +353,7 @@ function parseRows(d) {
 	return {'county': d.county + ', ' + d.state, 'state': d.state, 'county_num': +d.county_num, 'turnout': +d.turnout,
 		   'num_rep': +d.num_rep, 'num_dem': +d.num_dem, 'year': +d.year, 'state_electoral_votes': +d.state_electoral_votes, 
 		   'vap': +d.vap, 'fips_code': +d.fips_code, 'dem_margin': ((d.num_dem-d.num_rep)/d.county_num)*100,
-			'num_state': +d.num_state};
+			'num_state': +d.num_state, 'num_state_dem': +d.num_state_dem, 'num_state_rep': +d.num_state_rep};
 }
 //Need to recalculate dem_margin each time, as it's based on 
 
@@ -383,6 +388,8 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 	//var yearData = Object.assign({}, getYearData(dataset, year));
 	var yearData = copyObj(getYearData(dataset, year));
 
+	//console.log(yearData);  //list of objects
+
 
 	//Data is just array of all objects from csv
 	var rScale = d3.scaleLinear()
@@ -395,6 +402,19 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 			//console.log((d.county_num/d.state_num)*d.state_electoral_votes);
 			//console.log(Math.sqrt((d.county_num/d.state_num)*d.state_electoral_votes/Math.PI));
 			return Math.sqrt((d.county_num/d.num_state)*d.state_electoral_votes/Math.PI);   //Area proportional to electoral votes
+		})])  
+		.range([1, 40]);  //2,60  2, 30
+
+	var rScale_vpi = d3.scaleLinear()
+		.domain([0, d3.max(data, function(d) {
+			//console.log(d.county_num/d.num_state);
+			//console.log((d.county_num/d.state_num)*d.state_electoral_votes);
+			//console.log(Math.sqrt((d.county_num/d.state_num)*d.state_electoral_votes/Math.PI));
+			//console.log(d.num_state_dem-d.num_state_rep);
+			var county_vpi = (d.county_num/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
+			//var county_vpi = d.county_num * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
+			//console.log(Math.sqrt(county_vpi/Math.PI));
+			return Math.sqrt(county_vpi/Math.PI);   //Area proportional to electoral votes
 		})])  
 		.range([1, 40]);  //2,60  2, 30
 
@@ -431,6 +451,32 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 		});
 
 
+	// TODO: change other "r" functions to handle the value of checked, choose scale accordingly
+
+	function getRadioScaled(d) {
+
+		var checked = document.querySelector('input[name="area"]:checked').value;
+
+		if (checked === "electoral") {
+			return rScale_electoral(Math.sqrt((d.county_num/d.num_state)*d.state_electoral_votes/Math.PI));  // d.county_num Math.pow(d.county_num, 0.6)   Math.sqrt(d.county_num/Math.PI)  Math.sqrt(d *4/Math.PI)
+		} else if (checked === "vpi") {
+			//voter power index:
+			//http://www.dailykos.com/story/2016/12/19/1612252/-Voter-Power-Index-Just-How-Much-Does-the-Electoral-College-Distort-the-Value-of-Your-Vote
+			//X done: note: this is at county level right now, needs to be state margin: Math.abs(d.num_dem-d.num_rep)
+			//Does this even make sense though?  county level contribution to state level vpi?  VPI = power/voter.  Maybe just multiply
+			//times number of voters in county?
+			var county_vpi = (d.county_num/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
+			//var county_vpi = d.county_num * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
+			//console.log(county_vpi);
+			return rScale_vpi(Math.sqrt(county_vpi/Math.PI));
+
+		} else {
+			//Area proportional to number of voters
+			return rScale(Math.sqrt(d.county_num/Math.PI));
+		}
+
+	}
+
 	function updateAreas(event){
 
 		var checked = document.querySelector('input[name="area"]:checked').value;
@@ -439,20 +485,34 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 			.duration(1000) //750;
 			.attr("r", function(d) {
 
-				if (checked === "electoral") {
-					return rScale_electoral(Math.sqrt((d.county_num/d.num_state)*d.state_electoral_votes/Math.PI));  // d.county_num Math.pow(d.county_num, 0.6)   Math.sqrt(d.county_num/Math.PI)  Math.sqrt(d *4/Math.PI)
-				} else {
-					return rScale(Math.sqrt(d.county_num/Math.PI));
-				}
+				return getRadioScaled(d);
+
+				// if (checked === "electoral") {
+				// 	return rScale_electoral(Math.sqrt((d.county_num/d.num_state)*d.state_electoral_votes/Math.PI));  // d.county_num Math.pow(d.county_num, 0.6)   Math.sqrt(d.county_num/Math.PI)  Math.sqrt(d *4/Math.PI)
+				// } else if (checked === "vpi") {
+				// 	//voter power index:
+				// 	//http://www.dailykos.com/story/2016/12/19/1612252/-Voter-Power-Index-Just-How-Much-Does-the-Electoral-College-Distort-the-Value-of-Your-Vote
+				// 	//X done: note: this is at county level right now, needs to be state margin: Math.abs(d.num_dem-d.num_rep)
+				// 	//Does this even make sense though?  county level contribution to state level vpi?  VPI = power/voter.  Maybe just multiply
+				// 	//times number of voters in county?
+				// 	var county_vpi = (d.county_num/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
+				// 	//var county_vpi = d.county_num * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
+				// 	//console.log(county_vpi);
+				// 	return rScale_vpi(Math.sqrt(county_vpi/Math.PI));
+
+				// } else {
+				// 	//Area proportional to number of voters
+				// 	return rScale(Math.sqrt(d.county_num/Math.PI));
+				// }
 
 			});
 
 	}
 
 	d3.select("#areaform")
-	 .on("click", function () {
-	   return updateAreas();
-	});
+		.on("click", function () {
+			return updateAreas();
+		});
 
 
 	//Dragging behavior
@@ -482,15 +542,20 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 
 		var newMargin = xScale.invert(d.x)/100,
 			newTurnout = yScale.invert(d.y)/100,  //Math.abs()  d.y
+			oldTurnout = d.turnout,
 			oldMargin = (d.num_dem-d.num_rep)/d.county_num,
 			marginChange = newMargin-oldMargin, 
-			dfrac = d.num_dem/d.county_num,
-			rfrac = d.num_rep/d.county_num;
+			oldDfrac = d.num_dem/d.county_num,
+			oldRfrac = d.num_rep/d.county_num,
+			oldNumDem = d.num_dem,
+			oldNumRep = d.num_rep;
 
 		//Recalculate fractions based on margin change
 		//Half goes to each side, zero sum
-		dfrac += marginChange/2;   
-		rfrac -= marginChange/2;
+		// dfrac += marginChange/2;   
+		// rfrac -= marginChange/2;
+		dfrac = oldDfrac + marginChange/2;   
+		rfrac = oldRfrac - marginChange/2;
 
 		//Add increses in turnout to county_num
 		//Assume change in turnout affects D&R equally
@@ -504,6 +569,26 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 		d.num_rep = rfrac*d.county_num;
 		d.turnout =  newTurnout;
 
+		//Change state level data
+		d.num_state += (newTurnout - oldTurnout)*d.vap  //Multiply turnout change times Voting Age population
+		//console.log(d.num_state); //works
+		// d.num_state_dem += (marginChange/2)*d.vap  //Update state dem and rep counts
+		// d.num_state_rep -= (marginChange/2)*d.vap
+		// console.log((dfrac - oldDfrac));
+		// console.log((d.vap));
+		//console.log((rfrac - oldRfrac)*d.vap);
+
+		//console.log("Before: ", d.num_state_dem, d.num_state_rep);
+		//console.log(dfrac, oldDfrac);
+		// d.num_state_dem += (dfrac - oldDfrac)*d.vap;  //Update state dem and rep counts
+		// d.num_state_rep += (rfrac - oldRfrac)*d.vap;
+		// d.num_state_dem += (dfrac - oldDfrac)*d.county_num + (dfrac - oldDfrac)*d.turnout*d.vap;  //Update state dem and rep counts
+		// d.num_state_rep += (rfrac - oldRfrac)*d.county_num + (rfrac - oldRfrac)*d.turnout*d.vap;
+		//console.log(d.num_dem, oldNumDem);
+		d.num_state_dem += d.num_dem - oldNumDem;  //Update state dem and rep counts
+		d.num_state_rep += d.num_rep - oldNumRep;
+		//console.log("After: ", d.num_state_dem, d.num_state_rep);
+
 		//Call the tooltip function each time to update.  
 		tooltipOn(d);
 		//Update score as well:
@@ -514,6 +599,38 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 
 	function ended(d) {
 		//Update circle radius, color at end of drag.  
+		//update(yearData, d.year);
+
+		//Instead of callin update with yearData, you need to select
+		// all circles, filter by d.state === d.state, then set the num_state, num_state_dem, num_state_rep attributes on them
+		// then redraw radii,  .attr("r", function . . . )
+		// then reattach the tooltips
+
+		// var state = d.state,
+		// 	num = d.num_state,
+		// 	dem = d.num_state_dem,
+		// 	rep = d.num_state_rep;
+
+		// var circles = svg.selectAll("circle")
+		// 	.filter( function(d) {console.log(state, d.state, state === d.state ); return d.state === state; })
+		// 	//.transition()
+		// 	//.duration(1000)
+		// 	.attr("num_state", num)
+		// 	.attr("num_state_dem", dem)
+		// 	.attr("num_state_rep", rep)
+		// 	.attr("r", function(d) {return getRadioScaled(d);} );
+
+		//Also need to update score.  
+
+		//Alternate: try modifying the yeardata, then calling update(yearData, d.year);
+		//Modify global yearData variable
+		for (var i = 0; i<yearData.length; i++) {
+			if (yearData[i].state === d.state) {
+				yearData[i].num_state = d.num_state;
+				yearData[i].num_state_dem = d.num_state_dem;
+				yearData[i].num_state_rep = d.num_state_rep;
+			}
+		}
 		update(yearData, d.year);
 
 		//TODO: Try updating size of circles if electoral is checked
@@ -525,29 +642,51 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 		//Could get this data directly from dataframe,
 		//but want to calculate so can be updated easily on drag.   
 		var sums = [0,0,0];
+		var electoral_sums = [[],0,0];
+
 		for (var i=0; i<yearData.length; i++) {
 			sums[0] += yearData[i].num_dem;
 			sums[1] += yearData[i].num_rep;
 			sums[2] += yearData[i].county_num;
+			if (electoral_sums[0].indexOf(yearData[i].state) === -1) {
+				//Sum up electoral votes of unique states
+				//TODO: handle case of an independent winning the state
+				//console.log(yearData[i].state);
+				//console.log(yearData[i].num_state_dem, yearData[i].num_state_rep, yearData[i].num_state_dem > yearData[i].num_state_rep);
+				electoral_sums[0].push(yearData[i].state);
+				if (yearData[i].num_state_dem > yearData[i].num_state_rep ) {
+					//electoral_sums[1] is dems
+					electoral_sums[1] += yearData[i].state_electoral_votes;
+				} else {
+					electoral_sums[2] += yearData[i].state_electoral_votes;
+				}
+			}
 		}
+		//console.log(electoral_sums);
 
 		var dfrac = sums[0]/sums[2],
 			rfrac = sums[1]/sums[2];
 
 		//update dfrac rfrac text, update color background
-		demtext.text('D ' + pctFormat(dfrac))  
-		reptext.text('R ' + pctFormat(rfrac)) 
+		demtext.text('D ' + pctFormat(dfrac) + ' ' + electoral_sums[1])  
+		reptext.text('R ' + pctFormat(rfrac) + ' ' + electoral_sums[2]) 
 
 
 		//demtext.style('color', 'red')
-		if (dfrac > rfrac) {
+		// if (dfrac > rfrac) {
+		// 	demtext.style('fill', '#bbb');
+		// 	reptext.style('fill', null);
+		// } else {
+		// 	demtext.style('fill', null);
+		// 	reptext.style('fill', '#bbb');
+		// }
+		if (electoral_sums[1] > electoral_sums[2]) {
 			demtext.style('fill', '#bbb');
 			reptext.style('fill', null);
 		} else {
 			demtext.style('fill', null);
 			reptext.style('fill', '#bbb');
 		}
-
 
 		//TODO: Try updating electoral college scores in real time? Maybe only if 
 		// 		state vote threshold has passed from D to R
@@ -619,7 +758,8 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 				return yScale(d.turnout*100);
 			})
 			.attr("r", function(d) {
-				return rScale(Math.sqrt(d.county_num/Math.PI));   // d.county_num Math.pow(d.county_num, 0.6)   Math.sqrt(d.county_num/Math.PI)  Math.sqrt(d *4/Math.PI)
+				//return rScale(Math.sqrt(d.county_num/Math.PI));   // d.county_num Math.pow(d.county_num, 0.6)   Math.sqrt(d.county_num/Math.PI)  Math.sqrt(d *4/Math.PI)
+				return getRadioScaled(d);
 			})
 			.attr("fill",function(d){
 
