@@ -371,6 +371,7 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 
 	//console.log(data);
 
+
 	var dataset = d3.nest()
 		.key(function(d) { return +d.year; })
 		.sortValues(function(a,b) { return b.county_num - a.county_num; } )  //Bring smallest to front
