@@ -101,7 +101,7 @@ svg {
 body {
   /*background: #f5f5f1;*/
   color: #888;  /*#aaa;*/
-  font-family: "PT Serif", serif;
+  font-family:  serif;  /*"PT Serif", serif  sans-serif;*/
   font-size:15px;
   /*1em auto 4em auto;*/  
 /*margin: 50px 150px; 
@@ -355,21 +355,50 @@ function handleClick(event){
 
 function parseRows(d) {
 	//console.log(d);
-	return {'county': d.county + ', ' + d.state, 'state': d.state, 'county_num': +d.county_num, 'turnout': +d.turnout,
-		   'num_rep': +d.num_rep, 'num_dem': +d.num_dem, 'year': +d.year, 'state_electoral_votes': +d.state_electoral_votes, 
-		   'vap': +d.vap, 'fips_code': +d.fips_code, 'dem_margin': ((d.num_dem-d.num_rep)/d.county_num)*100,
-			'num_state': +d.num_state, 'num_state_dem': +d.num_state_dem, 'num_state_rep': +d.num_state_rep};
+	// return {'county': d.county + ', ' + d.state, 'state': d.state, 'county_num': +d.county_num, 'turnout': +d.turnout,
+	// 	   'num_rep': +d.num_rep, 'num_dem': +d.num_dem, 'year': +d.year, 'state_electoral_votes': +d.state_electoral_votes, 
+	// 	   'vap': +d.vap, 'fips_code': +d.fips_code, 'dem_margin': ((d.num_dem-d.num_rep)/d.county_num)*100,
+	// 		'num_state': +d.num_state, 'num_state_dem': +d.num_state_dem, 'num_state_rep': +d.num_state_rep};
+	return {'county': d.county_name + ', ' + d.state, 'state': d.state, 'county_num': +d.county_num, 'turnout': +d.turnout,
+		   'num_rep': +d.rep_num, 'num_dem': +d.dem_num, 'year': +d.year, 'state_electoral_votes': +d.state_electoral_votes, 
+		   'vap': +d.vap, 'fips_code': +d.fips_code, 'dem_margin': d.dem_margin*100};
+		   //'num_state': +d.num_state, 'num_state_dem': +d.num_state_dem, 'num_state_rep': +d.num_state_rep
 }
 //Need to recalculate dem_margin each time, as it's based on 
 
 //./US_County_Level_Presidential_Results_08-16_nofilter.csv'
 ///US_County_Level_Presidential_Results_08-16.csv  filters out turnout > 100%
 
-d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(error, data) {
+// old: './US_County_Level_Presidential_Results_08-16.csv'
+
+d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(error, data) {
 
 	if (error) {throw error};
 
 	//console.log(data);
+
+	// Build state data sums
+	var stateData = d3.nest()
+		.key(function(d) { return d.year; })
+		.key(function(d) { return d.state; })
+		.rollup(function(v) { return { 
+			'num_state': d3.sum(v, function(d) { return d.county_num; }),
+			'num_state_dem': d3.sum(v, function(d) { return d.num_dem; }),
+			'num_state_rep': d3.sum(v, function(d) { return d.num_rep; })
+		}; })
+		.object(data);
+
+	//console.log(stateData);
+
+	// Add the state level data to each county object
+	data.forEach(function(d) {
+		d.num_state = stateData[d.year][d.state]['num_state'],
+		d.num_state_dem = stateData[d.year][d.state]['num_state_dem'],
+		d.num_state_rep = stateData[d.year][d.state]['num_state_rep']
+	});
+
+	//console.log(data);
+
 
 	var dataset = d3.nest()
 		.key(function(d) { return +d.year; })
@@ -387,6 +416,8 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 	for (var i=0; i<dataset.length; i++) {
 		years.push(+dataset[i].key)
 	}
+	years.sort()
+
 	var year = years[0];
 
 	//Create a copy, so it can be edited on drag:
@@ -686,7 +717,7 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 			}
 		}
 		//console.log(electoral_sums);
-		console.log(sums);
+		//console.log(sums);
 
 
 		var dfrac = sums[0]/sums[2],
