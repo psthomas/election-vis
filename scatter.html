@@ -46,7 +46,12 @@
 .circle {
    stroke: white;
 	stroke-width: 0.1px;
-	cursor: pointer;
+	/*cursor: grab;*/ /*pointer; move;*/
+	/*https://stackoverflow.com/questions/5697067*/
+    cursor: move; /* fallback if grab cursor is unsupported */
+    cursor: grab;
+    cursor: -moz-grab;
+    cursor: -webkit-grab;
 }
 
 .circle:hover {
@@ -411,7 +416,9 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 			//console.log((d.county_num/d.state_num)*d.state_electoral_votes);
 			//console.log(Math.sqrt((d.county_num/d.state_num)*d.state_electoral_votes/Math.PI));
 			//console.log(d.num_state_dem-d.num_state_rep);
-			var county_vpi = (d.county_num/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
+			//var county_vpi = (d.county_num/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
+			// Use VAP instead
+			var county_vpi = (d.vap/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
 			//var county_vpi = d.county_num * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
 			//console.log(Math.sqrt(county_vpi/Math.PI));
 			return Math.sqrt(county_vpi/Math.PI);   //Area proportional to electoral votes
@@ -465,7 +472,9 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 			//X done: note: this is at county level right now, needs to be state margin: Math.abs(d.num_dem-d.num_rep)
 			//Does this even make sense though?  county level contribution to state level vpi?  VPI = power/voter.  Maybe just multiply
 			//times number of voters in county?
-			var county_vpi = (d.county_num/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
+			//var county_vpi = (d.county_num/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
+			// using VAP:
+			var county_vpi = (d.vap/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
 			//var county_vpi = d.county_num * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
 			//console.log(county_vpi);
 			return rScale_vpi(Math.sqrt(county_vpi/Math.PI));
@@ -651,10 +660,24 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 			if (electoral_sums[0].indexOf(yearData[i].state) === -1) {
 				//Sum up electoral votes of unique states
 				//TODO: handle case of an independent winning the state
+				//X TODO: handle Maine and Nebraska, 2 to statewide winner, 2/3 to congressional district winner
+				// TODO: Get Alaska Data
+				// don't have congressional district data. . . http://www.270towin.com/content/split-electoral-votes-maine-and-nebraska/
+				// e.g. 2016 = 306 to 232
 				//console.log(yearData[i].state);
 				//console.log(yearData[i].num_state_dem, yearData[i].num_state_rep, yearData[i].num_state_dem > yearData[i].num_state_rep);
 				electoral_sums[0].push(yearData[i].state);
-				if (yearData[i].num_state_dem > yearData[i].num_state_rep ) {
+				if (yearData[i].year === 2016 && (yearData[i].state === 'ME' || yearData[i].state === 'NE' )) {
+					//Handle split states
+					electoral_sums[1] += (3 + 0);
+					electoral_sums[2] += (1 + 5);
+					electoral_sums[0].push(yearData[i].state === 'ME' ? 'NE' : 'ME');
+
+				} else if (yearData[i].year === 2008 && yearData[i].state === 'NE' ) { 
+					electoral_sums[1] += 1;
+					electoral_sums[2] += 4;
+
+				} else if (yearData[i].num_state_dem > yearData[i].num_state_rep ) {
 					//electoral_sums[1] is dems
 					electoral_sums[1] += yearData[i].state_electoral_votes;
 				} else {
@@ -663,9 +686,21 @@ d3.csv('./US_County_Level_Presidential_Results_08-16.csv', parseRows, function(e
 			}
 		}
 		//console.log(electoral_sums);
+		console.log(sums);
+
 
 		var dfrac = sums[0]/sums[2],
 			rfrac = sums[1]/sums[2];
+
+		// TODO: fix input data as well, percentages are off:
+		// https://www.nytimes.com/elections/results/president
+		// 232
+		// Hillary Clinton
+		// 306
+		// Donald J. Trump
+		// 270 to win
+		// 65,853,625 votes (48.0%)
+		// 62,985,106 votes (45.9%)
 
 		//update dfrac rfrac text, update color background
 		demtext.text('D ' + pctFormat(dfrac) + ' ' + electoral_sums[1])  
