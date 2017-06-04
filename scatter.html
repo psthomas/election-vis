@@ -647,6 +647,16 @@ d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(e
 
 		//Call the tooltip function each time to update.  
 		tooltipOn(d);
+
+
+		for (var i = 0; i<yearData.length; i++) {
+			if (yearData[i].state === d.state) {
+				yearData[i].num_state = d.num_state;
+				yearData[i].num_state_dem = d.num_state_dem;
+				yearData[i].num_state_rep = d.num_state_rep;
+			}
+		}
+		
 		//Update score as well:
 		updateScore(yearData);
 		//Wait to update circles until ended below
