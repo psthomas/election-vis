@@ -1,3 +1,5 @@
 *.csv
 .DS_Store
 scatter_olddata_08-16.html
+scatter_vectors.html
+vectors_only.html
