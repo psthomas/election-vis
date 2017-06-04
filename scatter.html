@@ -454,6 +454,7 @@ d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(e
 			//console.log((d.county_num/d.state_num)*d.state_electoral_votes);
 			//console.log(Math.sqrt((d.county_num/d.state_num)*d.state_electoral_votes/Math.PI));
 			return Math.sqrt((d.county_num/d.num_state)*d.state_electoral_votes/Math.PI);   //Area proportional to electoral votes
+			//return Math.sqrt((d.vap/d.num_state)*d.state_electoral_votes/Math.PI);   //Area proportional to electoral votes
 		})])  
 		.range([1, 35]);  //2,60  2, 30
 
@@ -463,9 +464,10 @@ d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(e
 			//console.log((d.county_num/d.state_num)*d.state_electoral_votes);
 			//console.log(Math.sqrt((d.county_num/d.state_num)*d.state_electoral_votes/Math.PI));
 			//console.log(d.num_state_dem-d.num_state_rep);
-			//var county_vpi = (d.county_num/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
-			// Use VAP instead
-			var county_vpi = (d.vap/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
+			//Using actual county_num
+			var county_vpi = (d.county_num/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
+			// Using VAP instead
+			//var county_vpi = (d.vap/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
 			//var county_vpi = d.county_num * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
 			//console.log(Math.sqrt(county_vpi/Math.PI));
 			return Math.sqrt(county_vpi/Math.PI);   //Area proportional to electoral votes
@@ -512,16 +514,17 @@ d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(e
 		var checked = document.querySelector('input[name="area"]:checked').value;
 
 		if (checked === "electoral") {
-			return rScale_electoral(Math.sqrt((d.county_num/d.num_state)*d.state_electoral_votes/Math.PI));  // d.county_num Math.pow(d.county_num, 0.6)   Math.sqrt(d.county_num/Math.PI)  Math.sqrt(d *4/Math.PI)
+			return rScale_electoral(Math.sqrt((d.county_num/d.num_state)*d.state_electoral_votes/Math.PI));  
+			// d.county_num Math.pow(d.county_num, 0.6)  Math.sqrt(d.county_num/Math.PI)  Math.sqrt(d *4/Math.PI)
 		} else if (checked === "vpi") {
 			//voter power index:
 			//http://www.dailykos.com/story/2016/12/19/1612252/-Voter-Power-Index-Just-How-Much-Does-the-Electoral-College-Distort-the-Value-of-Your-Vote
 			//X done: note: this is at county level right now, needs to be state margin: Math.abs(d.num_dem-d.num_rep)
 			//Does this even make sense though?  county level contribution to state level vpi?  VPI = power/voter.  Maybe just multiply
 			//times number of voters in county?
-			//var county_vpi = (d.county_num/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
+			var county_vpi = (d.county_num/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
 			// using VAP:
-			var county_vpi = (d.vap/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
+			//var county_vpi = (d.vap/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
 			//var county_vpi = d.county_num * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
 			//console.log(county_vpi);
 			return rScale_vpi(Math.sqrt(county_vpi/Math.PI));
@@ -656,7 +659,7 @@ d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(e
 				yearData[i].num_state_rep = d.num_state_rep;
 			}
 		}
-		
+
 		//Update score as well:
 		updateScore(yearData);
 		//Wait to update circles until ended below
