@@ -46,12 +46,12 @@
 .circle {
    stroke: white;
 	stroke-width: 0.1px;
-	/*cursor: grab;*/ /*pointer; move;*/
+	cursor: pointer; /* grab; pointer; move;*/
 	/*https://stackoverflow.com/questions/5697067*/
-    cursor: move; /* fallback if grab cursor is unsupported */
-    cursor: grab;
+    /*cursor: move;*/ /* fallback if grab cursor is unsupported */
+/*    cursor: grab;
     cursor: -moz-grab;
-    cursor: -webkit-grab;
+    cursor: -webkit-grab;*/
 }
 
 .circle:hover {
@@ -65,17 +65,31 @@ svg {
 }
 
 #searchform {
-  position: absolute;
+  padding-bottom: 6px;
+/*  position: absolute;
   right: 50px;
-  top: 25px;
+  top: 25px;*/
   /*display:inline;*/
 }
 
 #areaform {
+/*  position: absolute;
+  right: 50px;
+  top: 50px;*/
+  /*display:inline;*/
+}
+
+#formholder {
   position: absolute;
   right: 50px;
-  top: 50px;
+  top: 25px;
+  font: 16px serif;
+  /*line-height: 1.2em;*/
   /*display:inline;*/
+}
+
+input {
+  font: 14px serif;
 }
 
 /*#search {
@@ -88,7 +102,7 @@ svg {
 .tooltip {
   /*border: 1px solid #999;*/
   /*line-height: 1;*/
-  font: 15px serif;/*18px serif "Helvetica Neuesans-serif;  "PT Sans"*/
+  /*font: 15px serif;*//*18px serif "Helvetica Neuesans-serif;  "PT Sans"*/
   /*text-align:right;*/
   /*font-weight: bold;*/
   /*padding: 5px;*/ 
@@ -135,8 +149,9 @@ body > p {
     	<!-- <input type="text" id="myVal" size="30" placeholder="State"> -->
         <input id="search" name="Submit" type="button"  onclick="handleClick();" value="Search" >  <!--type="submit"-->
         <!-- <input type="reset" value="Reset" onclick="document.myform.submit;"> -->
-        <!-- <input type="button" value="Reset" onclick="document.myform.reset(); document.myform.submit();"> -->
-        <input type="button" value="&#8634;" onclick="document.myform.reset(); handleClick();">
+        <!-- <input type="button" value="Reset" onclick="document.myform.reset(); document.myform.submit();"> 
+    	value="&#8634;"-->
+        <input type="button" value="X" onclick="document.myform.reset(); handleClick();">
 </form>
 <form id="areaform">
 		Weight: &nbsp;
@@ -246,7 +261,8 @@ svg.append("g")
 
 //Statically place tooltip:
 //http://stackoverflow.com/questions/30051141
-var tooltip = d3.select("body")
+//var tooltip = d3.select("body")
+var tooltip = d3.select("#formholder")
 	.append("div")    
 	.style("position", "absolute")
 	.style("visibility", "hidden")
@@ -254,9 +270,9 @@ var tooltip = d3.select("body")
 	// .style("top", height - margin.bottom + 8 + "px")
 	//.style("left", width/2 + margin.left + 8 + "px")
 	//.style("top", height - margin.bottom/3 + "px")
-	.style("right", "128px") //80ps
+	//.style("right", "128px") //80ps
 	//.style("left", width - 235 + "px")
-	.style("top", "73px")
+	//.style("top", "73px")
 	.attr("class", "tooltip");
 
 
@@ -430,7 +446,7 @@ d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(e
 	//Data is just array of all objects from csv
 	var rScale = d3.scaleLinear()
 		.domain([0, d3.max(data, function(d) {return Math.sqrt(d.county_num/Math.PI); })])  //Math.sqrt(d.county_num/Math.PI)
-		.range([1, 40]);  //2,60  2, 30
+		.range([1, 35]);  //2,60  2, 30
 
 	var rScale_electoral = d3.scaleLinear()
 		.domain([0, d3.max(data, function(d) {
@@ -439,7 +455,7 @@ d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(e
 			//console.log(Math.sqrt((d.county_num/d.state_num)*d.state_electoral_votes/Math.PI));
 			return Math.sqrt((d.county_num/d.num_state)*d.state_electoral_votes/Math.PI);   //Area proportional to electoral votes
 		})])  
-		.range([1, 40]);  //2,60  2, 30
+		.range([1, 35]);  //2,60  2, 30
 
 	var rScale_vpi = d3.scaleLinear()
 		.domain([0, d3.max(data, function(d) {
@@ -454,7 +470,7 @@ d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(e
 			//console.log(Math.sqrt(county_vpi/Math.PI));
 			return Math.sqrt(county_vpi/Math.PI);   //Area proportional to electoral votes
 		})])  
-		.range([1, 40]);  //2,60  2, 30
+		.range([1, 35]);  //2,60  2, 30
 
 
 	//Append increment buttons
