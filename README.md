@@ -32,7 +32,7 @@ This is an interactive visualization built with d3.js for viewing the turnout an
 
 ## Calculations
 
-**Voter Power Index**:  This index is an estimate of the value of additional voters in each state based on [given] [that the election turned out the way that it did] the candidate margin of victory [in each state].  Groups like [538](link) predict how likely a state is to switch between the candidates in order to calculate the VPI, but this takes a simpler approach as outlined at [DailyKos](http://www.dailykos.com/story/2016/12/19/1612252/-Voter-Power-Index-Just-How-Much-Does-the-Electoral-College-Distort-the-Value-of-Your-Vote).  This equation calculates the VPI and apportions it to each county based on the fraction of the state's votes:
+**Voter Power Index**:  This index is an estimate of the value of additional voters in each state based on the candidate margin of victory.  Groups like [538](https://fivethirtyeight.com/features/a-users-guide-to-fivethirtyeights-2016-general-election-forecast/) predict how likely a state is to switch between the candidates in order to calculate the VPI, but I take the simpler approach as outlined at [DailyKos](http://www.dailykos.com/story/2016/12/19/1612252/-Voter-Power-Index-Just-How-Much-Does-the-Electoral-College-Distort-the-Value-of-Your-Vote).  This equation calculates the VPI and apportions it to each county based on the fraction of the state's votes:
 
 * `VPI = (county_number/state_number) * (state_electoral_votes/(Math.abs(num_state_dem-num_state_rep)))`
 
@@ -66,3 +66,4 @@ One final thing to mention is the [distinction](http://www.electproject.org/home
 2005-2009 County VAP data: https://www.census.gov/rdo/data/voting_age_population_by_citizenship_and_race_cvap.html
 
 2012-2016 County Voting and VAP data: https://github.com/kyaroch/2012_and_2016_presidential_election_results_by_county
+
