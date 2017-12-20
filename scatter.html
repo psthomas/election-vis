@@ -232,7 +232,7 @@ function handleClick(event){
 function parseRows(d) {
 	return {'county': d.county_name + ', ' + d.state, 'state': d.state, 'county_num': +d.county_num, 'turnout': +d.turnout,
 		   'num_rep': +d.rep_num, 'num_dem': +d.dem_num, 'year': +d.year, 'state_electoral_votes': +d.state_electoral_votes, 
-		   'vap': +d.vap, 'fips_code': +d.fips_code, 'dem_margin': d.dem_margin*100};
+		   'vap': +d.vap, 'fips_code': +d.fips_code, 'dem_margin': +d.dem_margin*100};
 }
 
 
@@ -247,9 +247,23 @@ d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(e
 		.rollup(function(v) { return { 
 			'num_state': d3.sum(v, function(d) { return d.county_num; }),
 			'num_state_dem': d3.sum(v, function(d) { return d.num_dem; }),
-			'num_state_rep': d3.sum(v, function(d) { return d.num_rep; })
+			'num_state_rep': d3.sum(v, function(d) { return d.num_rep; }),
+			//'num_state_vap': d3.sum(v, function(d) { return d.vap; }),
+			//'state_turnout': d3.sum(v, function(d) { return d.county_num; })/d3.sum(v, function(d) { return d.vap; }),
+			//'state_margin': (d3.sum(v, function(d) { return d.num_dem; }) - d3.sum(v, function(d) { return d.num_rep; }))/ d3.sum(v, function(d) { return d.county_num; })
 		}; })
 		.object(data);
+
+	//If you're going to add state level and demographic data, this all really needs to be restructured,
+	//starting with using commmon names for x and y values, some way to turn on and off dragging and the
+	//radio buttons, 
+	//you could skip the dragging and radio buttons for now?  
+	//but you need to structure it so those can be added later.  
+	//This is a big job.
+	//Or, you could just have separate rendering functions, e.g. render_counties, render_states, render_demographics
+	//and then just call them, and duplicate a bunch of code. . . abstractions may be too problematic here.  
+
+	console.log(stateData);
 
 	// Add the state level data to each county object
 	data.forEach(function(d) {
@@ -261,7 +275,10 @@ d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(e
 	var dataset = d3.nest()
 		.key(function(d) { return +d.year; })
 		.sortValues(function(a,b) { return b.county_num - a.county_num; } )  //Bring smallest to front
+		//.object(data);
 		.entries(data);
+
+	console.log(dataset);
 
 	var years = [];
 	for (var i=0; i<dataset.length; i++) {
@@ -306,7 +323,8 @@ d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(e
 				year = years[0]
 			}
 			//Assign to new object, update circles:
-			yearData = copyObj(getYearData(dataset, year));
+			getYearData(dataset, year);
+			yearData = Object.assign([], getYearData(dataset, year));
 			update(yearData, year);
 		});
 
@@ -321,7 +339,8 @@ d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(e
 				year = years[years.length - 1];
 			} 
 			//Assign to new object, update:
-			yearData = copyObj(getYearData(dataset, year));
+			yearData = Object.assign([], getYearData(dataset, year));
+			//yearData = copyObj(getYearData(dataset, year));
 			update(yearData, year);
 		});
 
@@ -470,36 +489,88 @@ d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(e
 		var sums = [0,0,0];
 		var electoral_sums = [[],0,0];
 
+
 		for (var i=0; i<yearData.length; i++) {
 			sums[0] += yearData[i].num_dem;
 			sums[1] += yearData[i].num_rep;
 			sums[2] += yearData[i].county_num;
-			if (electoral_sums[0].indexOf(yearData[i].state) === -1) {
-				//Sum up electoral votes of unique states
-				// DONE: handle Maine and Nebraska, 2 to statewide winner, 2/3 to congressional district winner
-				// DONE: Get Alaska Data
-				// TODO: handle case of an independent winning the state
-				electoral_sums[0].push(yearData[i].state);
+			//Sum up electoral votes for each unique state
 
-				// TODO: note, these hard coded states won't update electoral votes on drag.  
-				if (yearData[i].year === 2016 && (yearData[i].state === 'ME' || yearData[i].state === 'NE' )) {
-					//Handle split states
-					electoral_sums[1] += (3 + 0);
-					electoral_sums[2] += (1 + 5);
-					electoral_sums[0].push(yearData[i].state === 'ME' ? 'NE' : 'ME');
+			// if (electoral_sums[0].indexOf(yearData[i].state) === -1) {  //This is evaluated every time = 3000 times.  filter instead
+			// 	// DONE: handle Maine and Nebraska, 2 to statewide winner, 2/3 to congressional district winner
+			// 	// DONE: Get Alaska Data
+			// 	// TODO: handle case of an independent winning the state
 
-				} else if (yearData[i].year === 2008 && yearData[i].state === 'NE' ) { 
-					electoral_sums[1] += 1;
-					electoral_sums[2] += 4;
+			// 	var stateName = yearData[i].state;
+			// 	var currentYear = yearData[i].year;
 
-				} else if (yearData[i].num_state_dem > yearData[i].num_state_rep ) {
-					//electoral_sums[1] is dems
-					electoral_sums[1] += yearData[i].state_electoral_votes;
-				} else {
-					electoral_sums[2] += yearData[i].state_electoral_votes;
-				}
-			}
+			// 	//electoral_sums[0].push(stateName);
+			// 	// TODO: note, these hard coded states won't update electoral votes on drag. 
+			// 	// TODO: speed this up.  2016 is especially slow, probably due to the multiple comparisons below 
+			// 	// if (yearData[i].year === 2016 && (stateName === 'ME' || yearData[i].state === 'NE' )) {
+			// 	// //['ME','NE'].indexOf(stateName) !== -1
+			// 	// currentYear === 2016 && stateName === 'ME'
+			// 	if (['ME','NE'].indexOf(stateName) !== -1 && currentYear === 2016) {   
+			// 		//Handle split states
+			// 		electoral_sums[1] += 3; // ME + NB
+			// 		electoral_sums[2] += 6; // ME + NB
+			// 		//electoral_sums[0].push(stateName === 'ME' ? 'NE' : 'ME'); //Make sure both states are added
+			// 		electoral_sums[0] = electoral_sums[0].concat(['ME','NE']);
+
+			// 	} else if (currentYear === 2008 && stateName === 'NE' ) { 
+			// 		electoral_sums[1] += 1;
+			// 		electoral_sums[2] += 4;
+			// 		electoral_sums[0].push(stateName);
+
+			// 	} else if (yearData[i].num_state_dem > yearData[i].num_state_rep ) {
+			// 		//electoral_sums[1] is dems
+			// 		electoral_sums[1] += yearData[i].state_electoral_votes;
+			// 		electoral_sums[0].push(stateName);
+			// 	} else {
+			// 		electoral_sums[2] += yearData[i].state_electoral_votes;
+			// 		electoral_sums[0].push(stateName);
+			// 	}
+			// }
 		}
+
+		// console.log(yearData);
+		var states = [];
+
+		var stateYearData = yearData.filter( function(current) {
+			//console.log(current);
+			//return states.indexOf(current.state)
+			if (states.indexOf(current.state) === -1) {
+				states.push(current.state);
+				return true;
+			}
+			return false;
+		});
+
+
+		for (var i = 0; i<stateYearData.length; i++) {
+
+			var stateName = stateYearData[i].state;
+			var currentYear = stateYearData[i].year;
+
+			if (currentYear === 2016 && ['ME','NE'].indexOf(stateName) !== -1) {     //['ME','NE'].indexOf(stateName) !== -1  (stateName === 'ME' || stateName === 'NE')
+				//Handle split states
+				electoral_sums[1] += 3; // ME + NB
+				electoral_sums[2] += 6; // ME + NB
+				//electoral_sums[0].push(stateName === 'ME' ? 'NE' : 'ME'); //Make sure both states are added
+				//electoral_sums[0] = electoral_sums[0].concat(['ME','NE']);
+			} else if (currentYear === 2008 && stateName === 'NE' ) { 
+				electoral_sums[1] += 1;
+				electoral_sums[2] += 4;
+
+			} else if (stateYearData[i].num_state_dem > stateYearData[i].num_state_rep ) {
+				//electoral_sums[1] is dems
+				electoral_sums[1] += stateYearData[i].state_electoral_votes;
+			} else {
+				electoral_sums[2] += stateYearData[i].state_electoral_votes;
+			}	
+
+		}
+
 
 		var dfrac = sums[0]/sums[2],
 			rfrac = sums[1]/sums[2];
@@ -544,7 +615,7 @@ d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(e
 			.attr("class", "circle")
 			.merge(circles)
 			.transition()
-			.duration(1000) //750;
+			.duration(1000) //750;  1000
 			//.ease(d3.easeLinear)
 			// .tween("lineDraw", function() {
 			// 	var curX = this.x
@@ -565,6 +636,7 @@ d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(e
 					return "rgba(192,192,192,0.05)";  
 				}
 			});
+
 
 	}
 
