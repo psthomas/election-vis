@@ -54,10 +54,11 @@ svg {
 }
 
 .circle {
-   stroke: white;
+	stroke: white;
 	stroke-width: 0.1px;
 	/*https://stackoverflow.com/questions/5697067*/
 	cursor: pointer; /* grab; pointer; move; -webkit-grab;*/
+	fill-opacity: 0.9;
 }
 
 .circle:hover {
@@ -78,9 +79,6 @@ svg {
 input {
   font: 14px serif;
 }
-
-
-
 
 </style>
 </head>
@@ -254,8 +252,6 @@ function handleClick(event){
 
 	return false; //Don't reload page
 }
-
-
 
 
 function renderCounties() {
