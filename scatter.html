@@ -66,18 +66,22 @@ svg {
 }
 
 #searchform {
-  padding-bottom: 6px;
+  padding-bottom: 5px;
 }
 
 #formholder {
   position: absolute;
   right: 50px;
   top: 25px;
-  font: 16px serif;
+  /*font: 16px serif;*/
+}
+
+#select {
+  padding:5px 0px;
 }
 
 input {
-  font: 14px serif;
+  /*font: 14px serif;*/
 }
 
 </style>
@@ -86,21 +90,24 @@ input {
 <body>
 
 <div id="formholder" >
+<div id="select">
 <select id="inds">
 		<option value="county" selected="selected">County</option>
 		<option value="state">State</option>
 		<option value="race">Race</option>
+		<option value="gender">Gender</option>
 </select>
+</div>
 <form id="searchform" name="myform" onSubmit="return handleClick()" >   
         <input type="text" id="myVal" size="30" placeholder="NY, WI, Los Angeles County">
         <input id="search" name="Submit" type="button"  onclick="handleClick();" value="Search" >  
         <input type="button" value="X" onclick="document.myform.reset(); handleClick();">
 </form>
 <form id="areaform">
-		Weight: &nbsp;
-		<input type="radio" name="area" value="vote"  checked> Vote &nbsp;
-  		<input type="radio" name="area" value="electoral" > Electoral &nbsp;
-  		<input type="radio" name="area" value="vpi" > VPI<br>
+		Weight: 
+		<input type="radio" name="area" value="vote"  checked>Vote
+  		<input type="radio" name="area" value="electoral" > Electoral 
+  		<input type="radio" name="area" value="vpi" >VPI<br>
 </form>
 </div> 
 
@@ -115,6 +122,7 @@ var margin = {top: 20, right: 20, bottom: 50, left: 30},
 var currentSearch = "";
 var searchTerms = "";
 var year;
+var cache = {};
 
 
 //Formatting Functions
@@ -204,8 +212,11 @@ d3.select('#inds').on("change", function () {
 			renderStates();
 			break;
 		case 'race':
-			renderDemographic();
+			renderDemographic('race');
 			//Eventually renderDemographic('race');
+			break;
+		case 'gender':
+			renderDemographic('gender');
 			break;
 		}
 	});
@@ -239,6 +250,8 @@ function handleClick(event){
 
     	//Either search county or state:
     	//works, but maybe create a common field between two, like d.total
+    	//TODO: update to work with demographic data
+    	//or the common field is d.id, but count doesn't have a common field
     	var field = d.county ? d.county : d.state;
     	var count = d.county_num ? d.county_num : d.num_state;
 
@@ -260,6 +273,23 @@ function handleClick(event){
 
 function renderCounties() {
 
+	if (cache.counties) {
+		build(cache.counties);
+	} else {
+		d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(error, data) {
+			if (error) {throw error};
+			//Update cache:
+			cache.counties = data;
+			build(data);
+		});
+	}
+
+	function parseRows(d) {
+		return {'county': d.county_name + ', ' + d.state, 'state': d.state, 'county_num': +d.county_num, 'turnout': +d.turnout,
+			   'num_rep': +d.rep_num, 'num_dem': +d.dem_num, 'year': +d.year, 'state_electoral_votes': +d.state_electoral_votes, 
+			   'vap': +d.vap, 'id': +d.fips_code, 'dem_margin': +d.dem_margin*100};
+	}
+
 	function tooltipOn(d) {
 		tooltip.style("visibility", "visible")
 			.html(
@@ -273,43 +303,7 @@ function renderCounties() {
 	}
 
 
-	// function handleClick(event){
-	// 	currentSearch = document.getElementById("myVal").value;
-
-	//     var words = currentSearch.split(",").map(function(s) { return s.trim() });  
-
-	//  	//Modifies global search variable, also used in update()
-	//  	searchTerms = RegExp(words.join('|'), "g");  //gi is case insensitive global, g is just global
-
-	//     svg.selectAll("circle").each(function(d) {
-	//     	var circle = d3.select(this);
-
-	//     	if ( (d.county.search(searchTerms) != -1) || (currentSearch == "") ) { 
-	//     		circle.style('pointer-events', 'auto');
-	//     		circle.attr("fill", colorScale(((d.num_dem-d.num_rep)/d.county_num)*100));
-	//     		circle.style("stroke-opacity", 1);
-	//     	} else {
-	//     		circle.style('pointer-events', 'none');
-	//     		circle.attr("fill", "rgba(192,192,192,0.05)");
-	//     		circle.style("stroke-opacity", 0);
-	//     	} 
-
-	//     });
-
-	// 	return false; //Don't reload page
-	// }
-
-
-	function parseRows(d) {
-		return {'county': d.county_name + ', ' + d.state, 'state': d.state, 'county_num': +d.county_num, 'turnout': +d.turnout,
-			   'num_rep': +d.rep_num, 'num_dem': +d.dem_num, 'year': +d.year, 'state_electoral_votes': +d.state_electoral_votes, 
-			   'vap': +d.vap, 'id': +d.fips_code, 'dem_margin': +d.dem_margin*100};
-	}
-
-
-	d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(error, data) {
-
-		if (error) {throw error};
+	function build(data) {
 
 		// Build state data sums
 		var stateData = d3.nest()
@@ -346,22 +340,25 @@ function renderCounties() {
 		var dataset = d3.nest()
 			.key(function(d) { return +d.year; })
 			.sortValues(function(a,b) { return b.county_num - a.county_num; } )  //Bring smallest to front
-			//.object(data);
-			.entries(data);
+			.object(data);
+			//.entries(data);
 
 		//console.log(dataset);
 
-		var years = [];
-		for (var i=0; i<dataset.length; i++) {
-			years.push(+dataset[i].key)
-		}
+		// var years = [];
+		// for (var i=0; i<dataset.length; i++) {
+		// 	years.push(+dataset[i].key)
+		// }
+		var years = Object.keys(dataset).map(Number);
 		years.sort()
 		//var year = years[0];
 		year = year ? year : years[0];
 
 		//Create a copy, so it can be edited on drag:
-		//var yearData = Object.assign({}, getYearData(dataset, year));
-		var yearData = copyObj(getYearData(dataset, year));
+		//var yearData = Object.assign([], getYearData(dataset, year));
+		//var yearData = copyObj(getYearData(dataset, year));
+		var yearData = copyObj(dataset[String(year)]);
+		console.log(yearData);
 
 		//Data is just array of all objects from csv, used to find max of all years
 		var rScale = d3.scaleLinear()
@@ -396,7 +393,8 @@ function renderCounties() {
 				}
 				//Assign to new object, update circles:
 				getYearData(dataset, year);
-				yearData = Object.assign([], getYearData(dataset, year));
+				//yearData = Object.assign([], getYearData(dataset, year));
+				yearData = copyObj(dataset[String(year)]);
 				update(yearData, year);
 			});
 
@@ -411,8 +409,9 @@ function renderCounties() {
 					year = years[years.length - 1];
 				} 
 				//Assign to new object, update:
-				yearData = Object.assign([], getYearData(dataset, year));
+				//yearData = Object.assign([], getYearData(dataset, year));
 				//yearData = copyObj(getYearData(dataset, year));
+				yearData = copyObj(dataset[String(year)]);
 				update(yearData, year);
 			});
 
@@ -762,7 +761,7 @@ function renderCounties() {
 		//update(yearData, year);  //Works, but transition is weird.
 
 
-	});
+	} //);
 }
 
 
@@ -793,22 +792,24 @@ function renderStates() {
 		var dataset = d3.nest()
 			.key(function(d) { return +d.year; })
 			.sortValues(function(a,b) { return b.num_state - a.num_state; } )  //Bring smallest to front
-			//.object(data);
-			.entries(data);
+			.object(data);
+			//.entries(data);
 
 		//console.log(dataset);
 
-		var years = [];
-		for (var i=0; i<dataset.length; i++) {
-			years.push(+dataset[i].key)
-		}
+		// var years = [];
+		// for (var i=0; i<dataset.length; i++) {
+		// 	years.push(+dataset[i].key)
+		// }
+		var years = Object.keys(dataset).map(Number);
 		years.sort()
 		//var year = years[0];
 		year = year ? year : years[0];
 
 		//Create a copy, so it can be edited on drag:
 		//var yearData = Object.assign([], getYearData(dataset, year));
-		var yearData = copyObj(getYearData(dataset, year));
+		//var yearData = copyObj(getYearData(dataset, year));
+		var yearData = copyObj(dataset[String(year)]);
 
 		//Data is just array of all objects from csv, used to find max of all years
 		var rScale = d3.scaleLinear()
@@ -844,7 +845,8 @@ function renderStates() {
 				//Assign to new object, update circles:
 				//getYearData(dataset, year);
 				//yearData = Object.assign([], getYearData(dataset, year));
-				yearData = copyObj(getYearData(dataset, year));
+				//yearData = copyObj(getYearData(dataset, year));
+				yearData = copyObj(dataset[String(year)]);
 				update(yearData, year);
 			});
 
@@ -860,7 +862,8 @@ function renderStates() {
 				} 
 				//Assign to new object, update:
 				//yearData = Object.assign([], getYearData(dataset, year));
-				yearData = copyObj(getYearData(dataset, year));
+				//yearData = copyObj(getYearData(dataset, year));
+				yearData = copyObj(dataset[String(year)]);
 				update(yearData, year);
 			});
 
@@ -1172,7 +1175,7 @@ function renderStates() {
 }
 
 
-function renderDemographic() {
+function renderDemographic(group) {
 
 	function tooltipOn(d) {
 		tooltip.style("visibility", "visible")
@@ -1186,39 +1189,45 @@ function renderDemographic() {
 
 
 	function parseRows(d) {
-		return {'group': d.group, 'id': d.group, 'num_group': +d.num_group, 'turnout': +d.turnout,
-			   'num_rep': +d.num_rep, 'num_dem': +d.num_dem, 'year': +d.year, 
-			   'vap': +d.num_group/+d.turnout, 'dem_margin': +d.dem_margin};
+		return {'group': d.group, 'id': d.group, 'num_group': +d.electorate_frac*+d.num_nation, 'turnout': +d.turnout,
+			   'num_rep': +d.rep_frac*+d.electorate_frac*+d.num_nation, 
+			   'num_dem': +d.dem_frac*+d.electorate_frac*+d.num_nation, 'year': +d.year, 
+			   'vap': +d.electorate_frac*+d.num_nation/+d.turnout, 'dem_margin': +d.dem_margin,
+			   'demographic':d.demographic};
 	}
 
-	//'vap' = +d.num_group/+d.turnout = theoretical 100% turnout
-
-
-	d3.csv('./US_Race_Presidential_Results_04-16_uncorrected.csv', parseRows, function(error, data) {
+	//'./US_Race_Presidential_Results_04-16.csv'
+	d3.csv('./US_Demographic_Presidential_Results_04-16.csv', parseRows, function(error, data) {
 
 		if (error) {throw error};
 
+		//console.log(data);
+
 		//Perhaps in the future also nest by demographic,
 
-		var dataset = d3.nest()
+		var nested = d3.nest()
+			.key(function(d) { return d.demographic; })
 			.key(function(d) { return +d.year; })
 			.sortValues(function(a,b) { return b.num_group - a.num_group; } )  //Bring smallest to front
-			//.object(data);
-			.entries(data);
+			.object(data);
+			//.entries(data);
 
-		console.log(dataset);
-
-		var years = [];
-		for (var i=0; i<dataset.length; i++) {
-			years.push(+dataset[i].key)
-		}
+		//Select current demographic
+		var dataset = nested[group];
+		
+		// var years = [];
+		// for (var i=0; i<dataset.length; i++) {
+		// 	years.push(+dataset[i].key)
+		// }
+		var years = Object.keys(dataset).map(Number);
 		years.sort()
 		//var year = years[0];
 		year = year ? year : years[0];
 
 		//Create a copy, so it can be edited on drag:
 		//var yearData = Object.assign([], getYearData(dataset, year));
-		var yearData = copyObj(getYearData(dataset, year));
+		//var yearData = copyObj(getYearData(dataset, year));
+		var yearData = copyObj(dataset[String(year)]);
 
 		//Data is just array of all objects from csv, used to find max of all years
 		var rScale = d3.scaleLinear()
@@ -1256,7 +1265,8 @@ function renderDemographic() {
 				//Assign to new object, update circles:
 				//getYearData(dataset, year);
 				//yearData = Object.assign([], getYearData(dataset, year));
-				yearData = copyObj(getYearData(dataset, year));
+				//yearData = copyObj(getYearData(dataset, year));
+				yearData = copyObj(dataset[String(year)]);  //Using object structure w/years as keys
 				update(yearData, year);
 			});
 
@@ -1272,7 +1282,8 @@ function renderDemographic() {
 				} 
 				//Assign to new object, update:
 				//yearData = Object.assign([], getYearData(dataset, year));
-				yearData = copyObj(getYearData(dataset, year));
+				//yearData = copyObj(getYearData(dataset, year));
+				yearData = copyObj(dataset[String(year)]);
 				update(yearData, year);
 			});
 
@@ -1414,10 +1425,12 @@ function renderDemographic() {
 
 
 			for (var i=0; i<yearData.length; i++) {
+				// if (yearData[i].group != 'Other') {
+				// 	console.log(yearData[i].group)
 				sums[0] += yearData[i].num_dem;
 				sums[1] += yearData[i].num_rep;
 				sums[2] += yearData[i].num_group;
-
+				//}
 			}
 
 			//Don't need to condense it down now, as it's already at state level:
@@ -1586,6 +1599,7 @@ function renderDemographic() {
 
 
 
+
 renderCounties();
 //renderStates();
 //renderDemographic();
@@ -1603,6 +1617,11 @@ renderCounties();
 //TODO: Investigate data issues with total percentages -- I think the problem is the corrections that US Election Project
 //applies for response bias.  All of the corrections are in the direction the total percentages are off.
 //Maybe just use ANES data, or uncorrected USEP data?
+//TODO: include data cache
+//TODO: include notes in blog post: issue with extrapolating demographic data to national vote count doesn't match
+//actual election results.  Also analyze ANES nonvoter democratic margin and add note about how if you're generally increasing
+//turnout it will probably favor democrats rather than just increase at the current margin (i.e you CAN'T in reality pull the 
+//circles straight upwards). 
 
 
 
