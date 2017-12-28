@@ -96,6 +96,8 @@ input {
 		<option value="state">State</option>
 		<option value="race">Race</option>
 		<option value="gender">Gender</option>
+		<option value="age">Age</option>
+		<option value="education">Education</option>
 </select>
 </div>
 <form id="searchform" name="myform" onSubmit="return handleClick()" >   
@@ -121,13 +123,17 @@ var margin = {top: 20, right: 20, bottom: 50, left: 30},
 //Globals:
 var currentSearch = "";
 var searchTerms = "";
+var selected = "county";
 var year;
 var cache = {};
 
 
 //Formatting Functions
-var pctFormat = d3.format(".2%")
-var thsdFormat = d3.format(",")
+var pctFormat = d3.format(".2%");
+var thsdFormat = d3.format(",");
+function capitalize(string) {
+	return string.charAt(0).toUpperCase() + string.slice(1);
+}
 
 //Create SVG
 var svg = d3.select("body").append("svg")
@@ -201,10 +207,10 @@ var tooltip = d3.select("#formholder")
 	.attr("class", "tooltip");
 
 d3.select('#inds').on("change", function () {
-	var sect = document.getElementById("inds");
-	var section = sect.options[sect.selectedIndex].value;
+	var sel = document.getElementById("inds");
+	selection = sel.options[sel.selectedIndex].value;  //Sets a global
 
-	switch (section) {
+	switch (selection) {
 		case 'county':
 			renderCounties();
 			break;
@@ -217,6 +223,12 @@ d3.select('#inds').on("change", function () {
 			break;
 		case 'gender':
 			renderDemographic('gender');
+			break;
+		case 'age':
+			renderDemographic('age');
+			break;
+		case 'education':
+			renderDemographic('education');
 			break;
 		}
 	});
@@ -252,8 +264,28 @@ function handleClick(event){
     	//works, but maybe create a common field between two, like d.total
     	//TODO: update to work with demographic data
     	//or the common field is d.id, but count doesn't have a common field
-    	var field = d.county ? d.county : d.state;
-    	var count = d.county_num ? d.county_num : d.num_state;
+    	// var field = d.county ? d.county : d.state;
+    	// var count = d.county_num ? d.county_num : d.num_state;
+        //var field = d[selection] ? d[selection] : d.group;
+    	// var count = d.county_num ? d.county_num : d.num_state;
+		switch (selection) {
+			case 'county':
+				var field = d.county;
+				var count = d.county_num;
+				break;
+			case 'state':
+				var field = d.state;
+				var count = d.num_state;
+				break;
+			case 'race':
+			case 'gender':
+			case 'age':
+			case 'education':
+				var field = d.group;
+				var count = d.num_group;
+				console.log(field, count);
+				break;
+		}
 
     	if ( (field.search(searchTerms) != -1) || (currentSearch == "") ) {   //(d.county.search(searchTerms) != -1)
     		circle.style('pointer-events', 'auto');
@@ -313,22 +345,8 @@ function renderCounties() {
 				'num_state': d3.sum(v, function(d) { return d.county_num; }),
 				'num_state_dem': d3.sum(v, function(d) { return d.num_dem; }),
 				'num_state_rep': d3.sum(v, function(d) { return d.num_rep; }),
-				//'num_state_vap': d3.sum(v, function(d) { return d.vap; }),
-				//'state_turnout': d3.sum(v, function(d) { return d.county_num; })/d3.sum(v, function(d) { return d.vap; }),
-				//'state_margin': (d3.sum(v, function(d) { return d.num_dem; }) - d3.sum(v, function(d) { return d.num_rep; }))/ d3.sum(v, function(d) { return d.county_num; })
 			}; })
 			.object(data);
-
-		//If you're going to add state level and demographic data, this all really needs to be restructured,
-		//starting with using commmon names for x and y values, some way to turn on and off dragging and the
-		//radio buttons, 
-		//you could skip the dragging and radio buttons for now?  
-		//but you need to structure it so those can be added later.  
-		//This is a big job.
-		//Or, you could just have separate rendering functions, e.g. render_counties, render_states, render_demographics
-		//and then just call them, and duplicate a bunch of code. . . abstractions may be too problematic here.  
-
-		//console.log(stateData);
 
 		// Add the state level data to each county object
 		data.forEach(function(d) {
@@ -343,22 +361,15 @@ function renderCounties() {
 			.object(data);
 			//.entries(data);
 
-		//console.log(dataset);
 
-		// var years = [];
-		// for (var i=0; i<dataset.length; i++) {
-		// 	years.push(+dataset[i].key)
-		// }
 		var years = Object.keys(dataset).map(Number);
 		years.sort()
-		//var year = years[0];
 		year = year ? year : years[0];
 
 		//Create a copy, so it can be edited on drag:
 		//var yearData = Object.assign([], getYearData(dataset, year));
 		//var yearData = copyObj(getYearData(dataset, year));
 		var yearData = copyObj(dataset[String(year)]);
-		console.log(yearData);
 
 		//Data is just array of all objects from csv, used to find max of all years
 		var rScale = d3.scaleLinear()
@@ -454,7 +465,6 @@ function renderCounties() {
 				return updateAreas();
 			});
 
-
 		//Dragging behavior
 		//https://bl.ocks.org/mbostock/6123708
 		var drag = d3.drag()
@@ -527,20 +537,6 @@ function renderCounties() {
 
 		function ended(d) {
 
-			// var state = d.state,
-			// 	num = d.num_state,
-			// 	dem = d.num_state_dem,
-			// 	rep = d.num_state_rep;
-
-			// var circles = svg.selectAll("circle")
-			// 	.filter( function(d) {console.log(state, d.state, state === d.state ); return d.state === state; })
-			// 	//.transition()
-			// 	//.duration(1000)
-			// 	.attr("num_state", num)
-			// 	.attr("num_state_dem", dem)
-			// 	.attr("num_state_rep", rep)
-			// 	.attr("r", function(d) {return getRadioScaled(d);} );
-
 			// Modify the yeardata, then call update(yearData, d.year);
 			for (var i = 0; i<yearData.length; i++) {
 				if (yearData[i].state === d.state) {
@@ -567,41 +563,6 @@ function renderCounties() {
 				sums[2] += yearData[i].county_num;
 				//Sum up electoral votes for each unique state
 
-				// if (electoral_sums[0].indexOf(yearData[i].state) === -1) {  //This is evaluated every time = 3000 times.  filter instead
-				// 	// DONE: handle Maine and Nebraska, 2 to statewide winner, 2/3 to congressional district winner
-				// 	// DONE: Get Alaska Data
-				// 	// TODO: handle case of an independent winning the state
-
-				// 	var stateName = yearData[i].state;
-				// 	var currentYear = yearData[i].year;
-
-				// 	//electoral_sums[0].push(stateName);
-				// 	// TODO: note, these hard coded states won't update electoral votes on drag. 
-				// 	// TODO: speed this up.  2016 is especially slow, probably due to the multiple comparisons below 
-				// 	// if (yearData[i].year === 2016 && (stateName === 'ME' || yearData[i].state === 'NE' )) {
-				// 	// //['ME','NE'].indexOf(stateName) !== -1
-				// 	// currentYear === 2016 && stateName === 'ME'
-				// 	if (['ME','NE'].indexOf(stateName) !== -1 && currentYear === 2016) {   
-				// 		//Handle split states
-				// 		electoral_sums[1] += 3; // ME + NB
-				// 		electoral_sums[2] += 6; // ME + NB
-				// 		//electoral_sums[0].push(stateName === 'ME' ? 'NE' : 'ME'); //Make sure both states are added
-				// 		electoral_sums[0] = electoral_sums[0].concat(['ME','NE']);
-
-				// 	} else if (currentYear === 2008 && stateName === 'NE' ) { 
-				// 		electoral_sums[1] += 1;
-				// 		electoral_sums[2] += 4;
-				// 		electoral_sums[0].push(stateName);
-
-				// 	} else if (yearData[i].num_state_dem > yearData[i].num_state_rep ) {
-				// 		//electoral_sums[1] is dems
-				// 		electoral_sums[1] += yearData[i].state_electoral_votes;
-				// 		electoral_sums[0].push(stateName);
-				// 	} else {
-				// 		electoral_sums[2] += yearData[i].state_electoral_votes;
-				// 		electoral_sums[0].push(stateName);
-				// 	}
-				// }
 			}
 
 			// console.log(yearData);
@@ -687,10 +648,6 @@ function renderCounties() {
 				.merge(circles)
 				.transition()
 				.duration(1000) //750;  1000
-				//.ease(d3.easeLinear)
-				// .tween("lineDraw", function() {
-				// 	var curX = this.x
-				// })
 				.attr("cx", function(d) {
 					return xScale(((d.num_dem-d.num_rep)/d.county_num)*100);
 				})
@@ -725,8 +682,6 @@ function renderCounties() {
 			circles.exit().remove();
 
 			//Create any new circles
-			//var circles = svg.selectAll("circle")
-			//	.data(yearData, function(d) { return d.fips_code; })
 			circles.enter().append("circle")
 				.attr("class", "circle")
 				.attr("cx", function(d) {
@@ -738,9 +693,6 @@ function renderCounties() {
 				.attr("r", function(d) {
 					return rScale(Math.sqrt(d.county_num/Math.PI));   //d.county_num   Math.sqrt(d.county_num/Math.PI)
 				})
-				// .attr("fill",function(d){
-				// 	return colorScale(((d.num_dem-d.num_rep)/d.county_num)*100);
-				// })
 				.attr("fill",function(d){
 					if (d.county.search(searchTerms) != -1) {   
 						return colorScale(((d.num_dem-d.num_rep)/d.county_num)*100);
@@ -752,7 +704,6 @@ function renderCounties() {
 				.on("mouseover", tooltipOn)
 				.on("mouseout", function(d){return tooltip.style("visibility", "hidden");});
 
-
 		}
 
 
@@ -760,12 +711,23 @@ function renderCounties() {
 		initialize(yearData, year);
 		//update(yearData, year);  //Works, but transition is weird.
 
-
 	} //);
 }
 
 
 function renderStates() {
+
+	if (cache.states) {
+		build(cache.states);
+	} else {
+		d3.csv('./US_State_Level_Presidential_Results_04-16.csv', parseRows, function(error, data) {
+			if (error) {throw error};
+			//Update cache:
+			cache.states = data;
+			build(data);
+		});
+	}
+
 
 	function tooltipOn(d) {
 		tooltip.style("visibility", "visible")
@@ -785,9 +747,7 @@ function renderStates() {
 	}
 
 
-	d3.csv('./US_State_Level_Presidential_Results_04-16.csv', parseRows, function(error, data) {
-
-		if (error) {throw error};
+	function build(data) {
 
 		var dataset = d3.nest()
 			.key(function(d) { return +d.year; })
@@ -795,12 +755,7 @@ function renderStates() {
 			.object(data);
 			//.entries(data);
 
-		//console.log(dataset);
 
-		// var years = [];
-		// for (var i=0; i<dataset.length; i++) {
-		// 	years.push(+dataset[i].key)
-		// }
 		var years = Object.keys(dataset).map(Number);
 		years.sort()
 		//var year = years[0];
@@ -1171,16 +1126,28 @@ function renderStates() {
 		//update(yearData, year);  //Works, but transition is weird.  
 
 
-	});
+	} //);
 }
 
 
 function renderDemographic(group) {
 
+	if (cache.demographics) {
+		build(cache.demographics);
+	} else {
+		d3.csv('./US_Demographic_Presidential_Results_04-16.csv', parseRows, function(error, data) {
+			if (error) {throw error};
+			//Update cache:
+			cache.demographics = data;
+			build(data);
+		});
+	}
+
+
 	function tooltipOn(d) {
 		tooltip.style("visibility", "visible")
 			.html(
-			"Group: " + d.group + "<br>" +
+			"Group: " + capitalize(d.group) + "<br>" +
 			" D: " + pctFormat(d.num_dem/d.num_group) +
 			" R: " + pctFormat(d.num_rep/d.num_group) + "<br>" +
 			"Turnout: " + pctFormat(d.turnout) + "<br>" +
@@ -1197,9 +1164,10 @@ function renderDemographic(group) {
 	}
 
 	//'./US_Race_Presidential_Results_04-16.csv'
-	d3.csv('./US_Demographic_Presidential_Results_04-16.csv', parseRows, function(error, data) {
+	//d3.csv('./US_Demographic_Presidential_Results_04-16.csv', parseRows, function(error, data) {
+	function build(data){
 
-		if (error) {throw error};
+		//if (error) {throw error};
 
 		//console.log(data);
 
@@ -1565,7 +1533,6 @@ function renderDemographic(group) {
 					return xScale(((d.num_dem-d.num_rep)/d.num_group)*100);
 				})
 				.attr("cy", function(d) {
-					console.log(d.turnout)
 					return yScale(d.turnout*100);
 				})
 				.attr("r", function(d) {
@@ -1593,7 +1560,7 @@ function renderDemographic(group) {
 		//update(yearData, year);  //Works, but transition is weird.  
 
 
-	});
+	} //);
 }
 
 
