@@ -1,15 +1,13 @@
 US_County_Level_Presidential_Results_08-16.csv
 US_County_Level_Presidential_Results_08-16_nofilter.csv
-US_State_Level_Presidential_Results_04-16.csv
 US_State_Level_Presidential_Results_04-16_unfiltered.csv
 US_Race_Presidential_Results_04-12.csv
 US_Race_Presidential_Results_04-16.csv
 US_Race_Presidential_Results_04-16_uncorrected.csv
-data/currentpopulationsurvey/*
 .DS_Store
 scatter_olddata_08-16.html
 scatter_vectors.html
 vectors_only.html
 .ipynb_checkpoints/*
 data/anes/*
-data/demographics/*
+!data/anes/README.md
