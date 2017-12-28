@@ -1134,15 +1134,9 @@ function renderDemographic(group) {
 			   'demographic':d.demographic};
 	}
 
-	//'./US_Race_Presidential_Results_04-16.csv'
-	//d3.csv('./US_Demographic_Presidential_Results_04-16.csv', parseRows, function(error, data) {
+
 	function build(data){
 
-		//if (error) {throw error};
-
-		//console.log(data);
-
-		//Perhaps in the future also nest by demographic,
 
 		var nested = d3.nest()
 			.key(function(d) { return d.demographic; })
@@ -1154,41 +1148,18 @@ function renderDemographic(group) {
 		//Select current demographic
 		var dataset = nested[group];
 		
-		// var years = [];
-		// for (var i=0; i<dataset.length; i++) {
-		// 	years.push(+dataset[i].key)
-		// }
+
 		var years = Object.keys(dataset).map(Number);
 		years.sort()
-		//var year = years[0];
 		year = year ? year : years[0];
 
 		//Create a copy, so it can be edited on drag:
-		//var yearData = Object.assign([], getYearData(dataset, year));
-		//var yearData = copyObj(getYearData(dataset, year));
 		var yearData = copyObj(dataset[String(year)]);
 
 		//Data is just array of all objects from csv, used to find max of all years
 		var rScale = d3.scaleLinear()
 			.domain([0, d3.max(data, function(d) {return Math.sqrt(d.num_group/Math.PI); })])  //Area proportional to votes
 			.range([1, 35]);  //2,60  2, 30
-
-		//These need to be disabled somehow:
-
-		// var rScale_electoral = d3.scaleLinear()
-		// 	.domain([0, d3.max(data, function(d) {
-		// 		return Math.sqrt(d.state_electoral_votes/Math.PI);  //Area proportional to electoral votes
-		// 	})])  
-		// 	.range([1, 35]); 
-
-		// var rScale_vpi = d3.scaleLinear()
-		// 	.domain([0, d3.max(data, function(d) {
-		// 		var county_vpi = d.state_electoral_votes/(Math.abs(d.num_dem-d.num_rep));
-		// 		// Using VAP instead
-		// 		//var county_vpi = (d.vap/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
-		// 		return Math.sqrt(county_vpi/Math.PI);   //Area proportional to VPI
-		// 	})])  
-		// 	.range([1, 35]);  //2,60  2, 30
 
 		//Append increment buttons
 		var incr = svg.append("text")
@@ -1202,10 +1173,7 @@ function renderDemographic(group) {
 					year = years[0]
 				}
 				//Assign to new object, update circles:
-				//getYearData(dataset, year);
-				//yearData = Object.assign([], getYearData(dataset, year));
-				//yearData = copyObj(getYearData(dataset, year));
-				yearData = copyObj(dataset[String(year)]);  //Using object structure w/years as keys
+				yearData = copyObj(dataset[String(year)]);  
 				update(yearData, year);
 			});
 
@@ -1220,8 +1188,6 @@ function renderDemographic(group) {
 					year = years[years.length - 1];
 				} 
 				//Assign to new object, update:
-				//yearData = Object.assign([], getYearData(dataset, year));
-				//yearData = copyObj(getYearData(dataset, year));
 				yearData = copyObj(dataset[String(year)]);
 				update(yearData, year);
 			});
@@ -1229,26 +1195,6 @@ function renderDemographic(group) {
 		function getRadioScaled(d) {
 
 			return rScale(Math.sqrt(d.num_group/Math.PI));
-
-			// var checked = document.querySelector('input[name="area"]:checked').value;
-
-			// if (checked === "electoral") {
-			// 	return rScale_electoral(Math.sqrt(d.state_electoral_votes/Math.PI));  
-			// 	// d.county_num Math.pow(d.county_num, 0.6)  Math.sqrt(d.county_num/Math.PI)  Math.sqrt(d *4/Math.PI)
-			// } else if (checked === "vpi") {
-			// 	//voter power index:
-			// 	//http://www.dailykos.com/story/2016/12/19/1612252/-Voter-Power-Index-Just
-			// 	//-How-Much-Does-the-Electoral-College-Distort-the-Value-of-Your-Vote
-			// 	// Using county_num
-			// 	var county_vpi = d.state_electoral_votes/(Math.abs(d.num_dem-d.num_rep));
-			// 	// using VAP:
-			// 	//var county_vpi = (d.vap/d.num_state) * (d.state_electoral_votes/(Math.abs(d.num_state_dem-d.num_state_rep)));
-			// 	return rScale_vpi(Math.sqrt(county_vpi/Math.PI));
-
-			// } else {
-			// 	//Area proportional to number of voters
-			// 	return rScale(Math.sqrt(d.num_state/Math.PI));
-			// }
 
 		}
 
@@ -1317,22 +1263,8 @@ function renderDemographic(group) {
 			d.num_rep = rfrac*d.num_group;
 			d.turnout =  newTurnout;
 
-			//Change state level data
-			// d.num_state += (newTurnout - oldTurnout)*d.vap  //Multiply turnout change times County Voting Age population
-			// d.num_state_dem += d.num_dem - oldNumDem;  //Update state dem and rep counts
-			// d.num_state_rep += d.num_rep - oldNumRep;
-
 			//Call the tooltip function each time to update.  
 			tooltipOn(d);
-
-			//Update all other counties in state
-			// for (var i = 0; i<yearData.length; i++) {
-			// 	if (yearData[i].state === d.state) {
-			// 		yearData[i].num_state = d.num_state;
-			// 		yearData[i].num_state_dem = d.num_state_dem;
-			// 		yearData[i].num_state_rep = d.num_state_rep;
-			// 	}
-			// }
 
 			//Update score as well:
 			updateScore(yearData);
@@ -1340,18 +1272,7 @@ function renderDemographic(group) {
 
 		function ended(d) {
 
-			//No longer needed, as this is at state level?:
-
-			// Modify the yeardata, then call update(yearData, d.year);
-			// for (var i = 0; i<yearData.length; i++) {
-			// 	if (yearData[i].state === d.state) {
-			// 		yearData[i].num_state = d.num_state;
-			// 		//yearData[i].num_state_dem = d.num_state_dem;
-			// 		//yearData[i].num_state_rep = d.num_state_rep;
-			// 	}
-			// }
 			update(yearData, d.year);
-
 
 		}
 
@@ -1372,48 +1293,6 @@ function renderDemographic(group) {
 				//}
 			}
 
-			//Don't need to condense it down now, as it's already at state level:
-
-			// console.log(yearData);
-			// var states = [];
-
-			// var stateYearData = yearData.filter( function(current) {
-			// 	//console.log(current);
-			// 	//return states.indexOf(current.state)
-			// 	if (states.indexOf(current.state) === -1) {
-			// 		states.push(current.state);
-			// 		return true;
-			// 	}
-			// 	return false;
-			// });
-
-			//Not needed, as electoral won't work anymore as demographics are 
-			//cross state:
-
-			// for (var i = 0; i<yearData.length; i++) {
-
-			// 	var stateName = yearData[i].state;
-			// 	var currentYear = yearData[i].year;
-
-			// 	if (currentYear === 2016 && ['ME','NE'].indexOf(stateName) !== -1) {     //['ME','NE'].indexOf(stateName) !== -1  (stateName === 'ME' || stateName === 'NE')
-			// 		//Handle split states
-			// 		electoral_sums[1] += 3; // ME + NB
-			// 		electoral_sums[2] += 6; // ME + NB
-			// 		//electoral_sums[0].push(stateName === 'ME' ? 'NE' : 'ME'); //Make sure both states are added
-			// 		//electoral_sums[0] = electoral_sums[0].concat(['ME','NE']);
-			// 	} else if (currentYear === 2008 && stateName === 'NE' ) { 
-			// 		electoral_sums[1] += 1;
-			// 		electoral_sums[2] += 4;
-
-			// 	} else if (yearData[i].num_dem > yearData[i].num_rep ) {
-			// 		//electoral_sums[1] is dems
-			// 		electoral_sums[1] += yearData[i].state_electoral_votes;
-			// 	} else {
-			// 		electoral_sums[2] += yearData[i].state_electoral_votes;
-			// 	}	
-
-			// }
-
 
 			var dfrac = sums[0]/sums[2],
 				rfrac = sums[1]/sums[2];
@@ -1422,20 +1301,6 @@ function renderDemographic(group) {
 			demtext.text('D ' + pctFormat(dfrac))  
 			reptext.text('R ' + pctFormat(rfrac)) 
 
-
-			// if (electoral_sums[1] > electoral_sums[2]) {
-			// 	demtext.style('fill', '#bbb');
-			// 	reptext.style('fill', null);
-			// } else {
-			// 	demtext.style('fill', null);
-			// 	reptext.style('fill', '#bbb');
-			// }
-
-			//Optional, set background color based on winner
-			// var backColor = dfrac > rfrac ? colorScale(5) : colorScale(-5);
-			// //var backColor = colorScale((dfrac-rfrac)*100);
-			// d3.selectAll('svg')
-			// 	.style('background-color', backColor);
 		}
 
 		function update(yearData, year) {
@@ -1481,8 +1346,6 @@ function renderDemographic(group) {
 
 		function initialize(yearData, year) {
 
-			//console.log(yearData);
-			//console.log(year)
 
 			//Change D,R scores:
 			updateScore(yearData);
@@ -1548,14 +1411,14 @@ renderCounties();
 //DONE: Figure search out
 //TODO: works, but maybe create a common field between two, like d.total for search function
 //DONE: Also, persist search state across data switch from county to state, vice versa
-//TODO: Fix electoral count for 2016 states, I think you should use out_df with erroneous counties filtered instead
+//DONE: Fix electoral count for 2016 states, I think you should use out_df with erroneous counties filtered instead
 //TODO: Maybe generalize this and add an upload button so someone can upload a preformatted
 //file for any election? 
-//TODO: update handleClick for race data
-//TODO: Investigate data issues with total percentages -- I think the problem is the corrections that US Election Project
+//DONE: update handleClick for race data
+//DONE: Investigate data issues with total percentages -- I think the problem is the corrections that US Election Project
 //applies for response bias.  All of the corrections are in the direction the total percentages are off.
 //Maybe just use ANES data, or uncorrected USEP data?
-//TODO: include data cache
+//DONE: include data cache
 //TODO: include notes in blog post: issue with extrapolating demographic data to national vote count doesn't match
 //actual election results.  Also analyze ANES nonvoter democratic margin and add note about how if you're generally increasing
 //turnout it will probably favor democrats rather than just increase at the current margin (i.e you CAN'T in reality pull the 
