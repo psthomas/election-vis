@@ -100,10 +100,12 @@ input {
 		<option value="education">Education</option>
 </select>
 </div>
+
+<!-- onSubmit="return handleClick()" -->
 <form id="searchform" name="myform" onSubmit="return handleClick()" >   
         <input type="text" id="myVal" size="30" placeholder="NY, WI, Los Angeles County">
-        <input id="search" name="Submit" type="button"  onclick="handleClick();" value="Search" >  
-        <input type="button" value="X" onclick="document.myform.reset(); handleClick();">
+        <input id="search" name="Submit" type="button" value="Search" >   <!--onclick="handleClick();"-->
+        <input type="button" value="X" onclick="document.myform.reset(); handleClick();" >  <!---->
 </form>
 <form id="areaform">
 		Weight: 
@@ -115,7 +117,7 @@ input {
 
 
 <script type="text/javascript">
-	
+
 // {top: 20, right: 20, bottom: 50, left: 30}
 var margin = {top: 30, right: 20, bottom: 50, left: 50},  
 	width = 0.95*window.innerWidth - margin.left - margin.right,   
@@ -124,7 +126,7 @@ var margin = {top: 30, right: 20, bottom: 50, left: 50},
 //Globals:
 var currentSearch = "";
 var searchTerms = "";
-var selected = "county";
+var selection = "county";
 var year;
 var cache = {};
 
@@ -267,13 +269,14 @@ function copyObj(original) {
 function handleClick(event){
 	currentSearch = document.getElementById("myVal").value;
 
-    var words = currentSearch.split(",").map(function(s) { return s.trim() });  
+	var words = currentSearch.split(",").map(function(s) { return s.trim() });  
 
- 	//Modifies global search variable, also used in update()
- 	searchTerms = RegExp(words.join('|'), "g");  //gi is case insensitive global, g is just global
+	//Modifies global search variable, also used in update()
+	searchTerms = RegExp(words.join('|'), "g");  //gi is case insensitive global, g is just global
 
-    svg.selectAll("circle").each(function(d) {
-    	var circle = d3.select(this);
+	//svg.selectAll
+	d3.selectAll("circle").each(function(d) {
+		var circle = d3.select(this);
 
 		switch (selection) {
 			case 'county':
@@ -290,21 +293,20 @@ function handleClick(event){
 			case 'education':
 				var field = d.group;
 				var count = d.num_group;
-				console.log(field, count);
 				break;
 		}
 
-    	if ( (field.search(searchTerms) != -1) || (currentSearch == "") ) {   //(d.county.search(searchTerms) != -1)
-    		circle.style('pointer-events', 'auto');
-    		circle.attr("fill", colorScale(((d.num_dem-d.num_rep)/count)*100));
-    		circle.style("stroke-opacity", 1);
-    	} else {
-    		circle.style('pointer-events', 'none');
-    		circle.attr("fill", "rgba(192,192,192,0.05)");
-    		circle.style("stroke-opacity", 0);
-    	} 
+		if ( (field.search(searchTerms) != -1) || (currentSearch == "") ) {   //(d.county.search(searchTerms) != -1)
+			circle.style('pointer-events', 'auto');
+			circle.attr("fill", colorScale(((d.num_dem-d.num_rep)/count)*100));
+			circle.style("stroke-opacity", 1);
+		} else {
+			circle.style('pointer-events', 'none');
+			circle.attr("fill", "rgba(192,192,192,0.05)");
+			circle.style("stroke-opacity", 0);
+		} 
 
-    });
+	});
 
 	return false; //Don't reload page
 }
@@ -1028,10 +1030,6 @@ function renderStates() {
 				.merge(circles)
 				.transition()
 				.duration(1000) //750;  1000
-				//.ease(d3.easeLinear)
-				// .tween("lineDraw", function() {
-				// 	var curX = this.x
-				// })
 				.attr("cx", function(d) {
 					return xScale(((d.num_dem-d.num_rep)/d.num_state)*100);
 				})
@@ -1069,8 +1067,6 @@ function renderStates() {
 			circles.exit().remove(); //.transition().duration(100);
 
 			//Create any new circles
-			//var circles = svg.selectAll("circle")
-			//	.data(yearData, function(d) { return d.state; })
 			circles.enter().append("circle")
 				.attr("class", "circle")
 				.attr("cx", function(d) {
@@ -1083,9 +1079,6 @@ function renderStates() {
 					//return rScale(Math.sqrt(d.num_state/Math.PI)); 
 					return getRadioScaled(d);
 				})
-				// .attr("fill",function(d){
-				// 	return colorScale(((d.num_dem-d.num_rep)/d.num_state)*100);
-				// })
 				.attr("fill",function(d){
 					if (d.state.search(searchTerms) != -1) {   
 						return colorScale(((d.num_dem-d.num_rep)/d.num_state)*100);
