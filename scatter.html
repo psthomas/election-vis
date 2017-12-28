@@ -127,6 +127,20 @@ var selected = "county";
 var year;
 var cache = {};
 
+var locurls = {
+	'county': './US_County_Level_Presidential_Results_04-16.csv',
+	'state': './US_State_Level_Presidential_Results_04-16.csv',
+	'demographic': './US_Demographic_Presidential_Results_04-16.csv'
+}
+
+var weburls = {
+	'county': 'https://raw.githubusercontent.com/psthomas/election-vis/master/US_County_Level_Presidential_Results_04-16.csv',
+	'state': 'https://raw.githubusercontent.com/psthomas/election-vis/master/US_State_Level_Presidential_Results_04-16.csv',
+	'demographic': 'https://raw.githubusercontent.com/psthomas/election-vis/master/US_Demographic_Presidential_Results_04-16.csv'
+}
+
+var local = false;
+var urls = local ? locurls : weburls;
 
 //Formatting Functions
 var pctFormat = d3.format(".2%");
@@ -260,14 +274,6 @@ function handleClick(event){
     svg.selectAll("circle").each(function(d) {
     	var circle = d3.select(this);
 
-    	//Either search county or state:
-    	//works, but maybe create a common field between two, like d.total
-    	//TODO: update to work with demographic data
-    	//or the common field is d.id, but count doesn't have a common field
-    	// var field = d.county ? d.county : d.state;
-    	// var count = d.county_num ? d.county_num : d.num_state;
-        //var field = d[selection] ? d[selection] : d.group;
-    	// var count = d.county_num ? d.county_num : d.num_state;
 		switch (selection) {
 			case 'county':
 				var field = d.county;
@@ -308,7 +314,7 @@ function renderCounties() {
 	if (cache.counties) {
 		build(cache.counties);
 	} else {
-		d3.csv('./US_County_Level_Presidential_Results_04-16.csv', parseRows, function(error, data) {
+		d3.csv(urls.county, parseRows, function(error, data) {
 			if (error) {throw error};
 			//Update cache:
 			cache.counties = data;
@@ -724,7 +730,7 @@ function renderStates() {
 	if (cache.states) {
 		build(cache.states);
 	} else {
-		d3.csv('./US_State_Level_Presidential_Results_04-16.csv', parseRows, function(error, data) {
+		d3.csv(urls.state, parseRows, function(error, data) {
 			if (error) {throw error};
 			//Update cache:
 			cache.states = data;
@@ -1106,7 +1112,7 @@ function renderDemographic(group) {
 	if (cache.demographics) {
 		build(cache.demographics);
 	} else {
-		d3.csv('./US_Demographic_Presidential_Results_04-16.csv', parseRows, function(error, data) {
+		d3.csv(urls.demographic, parseRows, function(error, data) {
 			if (error) {throw error};
 			//Update cache:
 			cache.demographics = data;
@@ -1396,8 +1402,6 @@ function renderDemographic(group) {
 
 	} //);
 }
-
-
 
 
 
