@@ -60,7 +60,7 @@ The turnout exceeded 100% in 16 counties, which I made note of and filtered out 
 
 It's also important to mention the [distinction](http://www.electproject.org/home/voter-turnout/faq/denominator) between Voting Age Population (VAP) and Voting Eligible Population (VEP).  VEP estimates remove non-citizens, felons (depending on state law), and other groups that are ineligible to vote.  This means that using the VAP data could underestimate turnout in counties with e.g. high felony convictions.  The Sentencing Project [estimates](http://www.pewtrusts.org/en/research-and-analysis/blogs/stateline/2016/10/10/more-than-six-million-felons-cant-vote-in-2016) that 6 million felons were ineligible to vote in 2016, so the effect on estimated turnout could be substantial.  Unfortunately, VEP data isn't available at the county level so I used VAP data instead.  This might be preferable in some ways though because it highlights a problem -- close to 2.5 percent of the US Population isn't being represented by their government.
 
-Adding in the demographic data led to a new set of problems.  I used a combination of the Census Bureau's Current Population Survey [4] for the `Turnout` and `Fraction of the Electorate` values and the American National Election Studies [5] for the `Democratic Margin` values (courtesy of the Elections Project [6]).  Extrapolating from demographic survey data to national vote counts doesn't lead to good estimates, so think of the difference between the estimated percentages and actual percentages from the county data as a measure of the error.  This is a well known problem [7] and is a result of uncertainty in the surveys.  I also had to interpolate some values to get the categories to line up across datasets, so I make note of that when it's done in the Jupyter notebook.          
+Adding in the demographic data led to a new set of problems.  I used a combination of the Census Bureau's Current Population Survey [4] for the `Turnout` and `Fraction of the Electorate` values (courtesy of the Elections Project [5]), and the American National Election Studies [6] for the `Democratic Margin` values.  Extrapolating from demographic survey data to national vote counts doesn't lead to good estimates, so think of the difference between the estimated percentages and actual percentages from the county data as a measure of the error.  This is a well known problem [7] and is a result of uncertainty in the surveys.  I also had to interpolate some values to get the categories to line up across datasets, so I make note of that when it's done in the Jupyter notebook.          
 
 ## Sources
 
@@ -72,9 +72,9 @@ Adding in the demographic data led to a new set of problems.  I used a combinati
 
 [4] Voting and Registration Tables.  US Census Bureau.  https://www.census.gov/topics/public-sector/voting/data/tables.All.html
 
-[5] American National Election Studies.  http://www.electionstudies.org/studypages/download/datacenter_all_NoData.html
+[5] United States Election Project.  http://www.electproject.org/home/voter-turnout/demographics
 
-[6] United States Election Project.  http://www.electproject.org/home/voter-turnout/demographics
+[6] American National Election Studies.  http://www.electionstudies.org/studypages/download/datacenter_all_NoData.html
 
 [7] Voter Trends in 2016.  Center for American Progress.  https://www.americanprogress.org/issues/democracy/reports/2017/11/01/441926/voter-trends-in-2016/
 
