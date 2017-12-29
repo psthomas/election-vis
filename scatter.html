@@ -704,7 +704,8 @@ function renderCounties() {
 					return yScale(d.turnout*100);
 				})
 				.attr("r", function(d) {
-					return rScale(Math.sqrt(d.county_num/Math.PI));   //d.county_num   Math.sqrt(d.county_num/Math.PI)
+					//return rScale(Math.sqrt(d.county_num/Math.PI)); 
+					return getRadioScaled(d);
 				})
 				.attr("fill",function(d){
 					if (d.county.search(searchTerms) != -1) {   
