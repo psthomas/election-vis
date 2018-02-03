@@ -57,8 +57,15 @@ svg {
 	stroke: white;
 	stroke-width: 0.1px;
 	/*https://stackoverflow.com/questions/5697067*/
-	cursor: move; /* grab; pointer; move; -webkit-grab;*/
+	cursor: pointer;  /*grab; pointer; move; -webkit-grab;*/
 	fill-opacity: 0.9;
+}
+.circle:active {
+	/*Closed hand*/
+	/*https://stackoverflow.com/questions/5697067*/
+    cursor: grabbing;
+    cursor: -moz-grabbing;
+    cursor: -webkit-grabbing;
 }
 
 .circle:hover {
