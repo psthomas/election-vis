@@ -55,7 +55,7 @@ svg {
 
 .circle {
 	stroke: white;
-	stroke-width: 0.1px;
+	stroke-width: 0.2px;
 	/*https://stackoverflow.com/questions/5697067*/
 	cursor: pointer;  /*grab; pointer; move; -webkit-grab;*/
 	fill-opacity: 0.9;
@@ -80,6 +80,36 @@ svg {
   position: absolute;
   right: 50px;
   top: 25px;
+  /*font: 16px serif;*/
+}
+
+.incrbtn {
+  font: 500 30px serif;
+  cursor: pointer;
+  background-color: Transparent;
+  background-repeat:no-repeat;
+  border: none;
+  cursor:pointer;
+  overflow: hidden;
+  /*outline:none;*/
+  color: #e5e5e5;
+}
+
+.incrbtn:hover {
+  color: #ccc;
+}
+
+#upclick {
+  position: absolute;
+  left: 55px;
+  bottom: 160px;
+  /*font: 16px serif;*/
+}
+
+#downclick {
+  position: absolute;
+  left: 55px;
+  bottom: 125px;
   /*font: 16px serif;*/
 }
 
@@ -122,6 +152,9 @@ input {
 </form>
 </div> 
 
+<button class="incrbtn" id="upclick">&#9650;</button>
+<button class="incrbtn" id="downclick">&#9660;</button>
+
 
 <script type="text/javascript">
 
@@ -149,8 +182,8 @@ var weburls = {
 	'demographic': 'https://raw.githubusercontent.com/psthomas/election-vis/master/US_Demographic_Presidential_Results_04-16.csv'
 }
 
-var local = false;
-var urls = local ? locurls : weburls;
+//var urls = weburls;
+var urls = locurls; 
 
 //Formatting Functions
 var pctFormat = d3.format(".2%");
@@ -407,40 +440,33 @@ function renderCounties() {
 			})])  
 			.range([1, 35]);  //2,60  2, 30
 
-		//Append increment buttons
-		var incr = svg.append("text")
-			.attr("class", "incr")
-			.attr("dy", height-43) // 1em
-			.attr("dx", 0)  //.5em
-			.html("&#9650;")
-			.on("click", function() {
-				year += 4;
-				if (year > years[years.length - 1]) {
-					year = years[0]
-				}
-				//Assign to new object, update circles:
-				getYearData(dataset, year);
-				//yearData = Object.assign([], getYearData(dataset, year));
-				yearData = copyObj(dataset[String(year)]);
-				update(yearData, year);
-			});
+		function upclick() {
+			year += 4;
+			if (year > years[years.length - 1]) {
+				year = years[0]
+			}
+			//Assign to new object, update circles:
+			getYearData(dataset, year);
+			//yearData = Object.assign([], getYearData(dataset, year));
+			yearData = copyObj(dataset[String(year)]);
+			update(yearData, year);
+		}
 
-		var decr = svg.append("text")
-			.attr("class", "incr")
-			.attr("dy", height-10)
-			.attr("dx", 0)  //".5em"
-			.html("&#9660;")
-			.on("click", function() {
-				year -= 4;
-				if (year < years[0]) {
-					year = years[years.length - 1];
-				} 
-				//Assign to new object, update:
-				//yearData = Object.assign([], getYearData(dataset, year));
-				//yearData = copyObj(getYearData(dataset, year));
-				yearData = copyObj(dataset[String(year)]);
-				update(yearData, year);
-			});
+		function downclick() {
+			year -= 4;
+			if (year < years[0]) {
+				year = years[years.length - 1];
+			} 
+			//Assign to new object, update:
+			//yearData = Object.assign([], getYearData(dataset, year));
+			//yearData = copyObj(getYearData(dataset, year));
+			yearData = copyObj(dataset[String(year)]);
+			update(yearData, year);
+		}
+
+		d3.select('#upclick').on("click", upclick);
+		d3.select('#downclick').on("click", downclick);
+
 
 		function getRadioScaled(d) {
 
@@ -805,36 +831,32 @@ function renderStates() {
 			})])  
 			.range([1, 35]);  //2,60  2, 30
 
-		//Append increment buttons
-		var incr = svg.append("text")
-			.attr("class", "incr")
-			.attr("dy", height-43) // 1em
-			.attr("dx", 0)  //.5em
-			.html("&#9650;")
-			.on("click", function() {
-				year += 4;
-				if (year > years[years.length - 1]) {
-					year = years[0]
-				}
-				//Assign to new object, update circles:
-				yearData = copyObj(dataset[String(year)]);
-				update(yearData, year);
-			});
+		function upclick() {
+			year += 4;
+			if (year > years[years.length - 1]) {
+				year = years[0]
+			}
+			//Assign to new object, update circles:
+			getYearData(dataset, year);
+			//yearData = Object.assign([], getYearData(dataset, year));
+			yearData = copyObj(dataset[String(year)]);
+			update(yearData, year);
+		}
 
-		var decr = svg.append("text")
-			.attr("class", "incr")
-			.attr("dy", height-10)
-			.attr("dx", 0)  //".5em"
-			.html("&#9660;")
-			.on("click", function() {
-				year -= 4;
-				if (year < years[0]) {
-					year = years[years.length - 1];
-				} 
-				//Assign to new object, update:
-				yearData = copyObj(dataset[String(year)]);
-				update(yearData, year);
-			});
+		function downclick() {
+			year -= 4;
+			if (year < years[0]) {
+				year = years[years.length - 1];
+			} 
+			//Assign to new object, update:
+			//yearData = Object.assign([], getYearData(dataset, year));
+			//yearData = copyObj(getYearData(dataset, year));
+			yearData = copyObj(dataset[String(year)]);
+			update(yearData, year);
+		}
+
+		d3.select('#upclick').on("click", upclick);
+		d3.select('#downclick').on("click", downclick);
 
 		function getRadioScaled(d) {
 
@@ -1169,36 +1191,32 @@ function renderDemographic(group) {
 			.domain([0, d3.max(data, function(d) {return Math.sqrt(d.num_group/Math.PI); })])  //Area proportional to votes
 			.range([1, 35]);  //2,60  2, 30
 
-		//Append increment buttons
-		var incr = svg.append("text")
-			.attr("class", "incr")
-			.attr("dy", height-43) // 1em
-			.attr("dx", 0)  //.5em
-			.html("&#9650;")
-			.on("click", function() {
-				year += 4;
-				if (year > years[years.length - 1]) {
-					year = years[0]
-				}
-				//Assign to new object, update circles:
-				yearData = copyObj(dataset[String(year)]);  
-				update(yearData, year);
-			});
+		function upclick() {
+			year += 4;
+			if (year > years[years.length - 1]) {
+				year = years[0]
+			}
+			//Assign to new object, update circles:
+			getYearData(dataset, year);
+			//yearData = Object.assign([], getYearData(dataset, year));
+			yearData = copyObj(dataset[String(year)]);
+			update(yearData, year);
+		}
 
-		var decr = svg.append("text")
-			.attr("class", "incr")
-			.attr("dy", height-10)
-			.attr("dx", 0)  //".5em"
-			.html("&#9660;")
-			.on("click", function() {
-				year -= 4;
-				if (year < years[0]) {
-					year = years[years.length - 1];
-				} 
-				//Assign to new object, update:
-				yearData = copyObj(dataset[String(year)]);
-				update(yearData, year);
-			});
+		function downclick() {
+			year -= 4;
+			if (year < years[0]) {
+				year = years[years.length - 1];
+			} 
+			//Assign to new object, update:
+			//yearData = Object.assign([], getYearData(dataset, year));
+			//yearData = copyObj(getYearData(dataset, year));
+			yearData = copyObj(dataset[String(year)]);
+			update(yearData, year);
+		}
+
+		d3.select('#upclick').on("click", upclick);
+		d3.select('#downclick').on("click", downclick);
 
 		function getRadioScaled(d) {
 
