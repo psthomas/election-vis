@@ -139,11 +139,13 @@ input {
 </div>
 
 <!-- onSubmit="return handleClick()" -->
-<form id="searchform" name="myform" onSubmit="return handleClick()" >   
+<!-- <form id="searchform" name="myform">  -->  
+<span id="searchform" name="myform"> 
         <input type="text" id="myVal" size="30" placeholder="NY, WI, Los Angeles County">
-        <input id="search" name="Submit" type="button" value="Search" >   <!--onclick="handleClick();"-->
-        <input type="button" value="X" onclick="document.myform.reset(); handleClick();" >  <!---->
-</form>
+        <input id="search" name="Submit" type="button" value="Search" onclick="handleClick();">   <!--onclick="handleClick();"-->
+        <input type="button" value="X" onclick="reset();" >  <!--document.myform.reset();-->
+<!-- </form> -->
+</span>
 <form id="areaform">
 		Weight: 
 		<input type="radio" name="area" value="vote"  checked>Vote
@@ -305,6 +307,15 @@ function copyObj(original) {
 }
 
 
+// d3.select('#searchform').onSubmit( function() {
+// 	handleClick(); 
+// 	return false;
+// });
+
+function reset() {
+	document.getElementById("myVal").value= ''; 
+	handleClick();
+}
 
 function handleClick(event){
 	currentSearch = document.getElementById("myVal").value;
