@@ -385,7 +385,7 @@ function renderCounties() {
 	function parseRows(d) {
 		return {'county': d.county_name + ', ' + d.state, 'state': d.state, 'county_num': +d.county_num, 'turnout': +d.turnout,
 			   'num_rep': +d.rep_num, 'num_dem': +d.dem_num, 'year': +d.year, 'state_electoral_votes': +d.state_electoral_votes, 
-			   'vap': +d.vap, 'id': +d.fips_code, 'dem_margin': +d.dem_margin*100};
+			   'vap': +d.vap, 'id': d.fips_code, 'dem_margin': +d.dem_margin*100};
 	}
 
 	function tooltipOn(d) {
@@ -700,6 +700,12 @@ function renderCounties() {
 
 			var circles = svg.selectAll("circle")
 				.data(yearData, function(d) { return d.id ; });  // Key for object constancy: https://bost.ocks.org/mike/constancy/
+				// .data(yearData, function(d) { 
+				// 	if (d.state === 'MA') {
+				// 		console.log(d.id);
+				// 	}
+				// 	return d.id; 
+				// });
 
 			circles.exit().remove();
 
@@ -740,7 +746,13 @@ function renderCounties() {
 			title.text(year);
 
 			var circles = svg.selectAll("circle")
-				.data(yearData, function(d) { return d.id ; });  // Key for object constancy: https://bost.ocks.org/mike/constancy/
+				.data(yearData, function(d) { return d.id ; });
+				// .data(yearData, function(d) { 
+				// 	if (d.state === 'MA') {
+				// 		console.log(d.id);
+				// 	}
+				// 	return d.id; 
+				// });  // Key for object constancy: https://bost.ocks.org/mike/constancy/
 
 			circles.exit().remove();
 
