@@ -127,31 +127,33 @@ input {
 <body>
 
 <div id="formholder" >
-<div id="select">
-<select id="inds">
-		<option value="county" selected="selected">County</option>
-		<option value="state">State</option>
-		<option value="race">Race</option>
-		<option value="gender">Sex</option>
-		<option value="age">Age</option>
-		<option value="education">Education</option>
-</select>
-</div>
+	<div id="select">
+		<select id="inds">
+				<option value="county" selected="selected">County</option>
+				<option value="state">State</option>
+				<option value="race">Race</option>
+				<option value="gender">Sex</option>
+				<option value="age">Age</option>
+				<option value="education">Education</option>
+				<!-- <input type="button" value="&#x21bb;" onclick="reload();" > -->
+		</select>
 
-<!-- onSubmit="return handleClick()" -->
-<!-- <form id="searchform" name="myform">  -->  
-<span id="searchform" name="myform"> 
-        <input type="text" id="myVal" size="30" placeholder="NY, WI, Los Angeles County">
-        <input id="search" name="Submit" type="button" value="Search" onclick="handleClick();">   <!--onclick="handleClick();"-->
-        <input type="button" value="X" onclick="reset();" >  <!--document.myform.reset();-->
-<!-- </form> -->
-</span>
-<form id="areaform">
-		Weight: 
-		<input type="radio" name="area" value="vote"  checked>Vote
-  		<input type="radio" name="area" value="electoral" > Electoral 
-  		<input type="radio" name="area" value="vpi" >VPI<br>
-</form>
+	</div>
+
+	<!-- onSubmit="return handleClick()" -->
+	<!-- <form id="searchform" name="myform">  -->  
+	<span id="searchform" name="myform"> 
+	        <input type="text" id="myVal" size="30" placeholder="NY, WI, Los Angeles County">
+	        <input id="search" name="Submit" type="button" value="Search" onclick="handleClick();">   <!--onclick="handleClick();"-->
+	        <input type="button" value="X" onclick="removeSearch();" >  <!--document.myform.reset();-->
+	<!-- </form> -->
+	</span>
+	<form id="areaform">
+			Weight: 
+			<input type="radio" name="area" value="vote"  checked>Vote
+	  		<input type="radio" name="area" value="electoral" > Electoral 
+	  		<input type="radio" name="area" value="vpi" >VPI<br>
+	</form>
 </div> 
 
 <button class="incrbtn" id="upclick">&#9650;</button>
@@ -172,17 +174,17 @@ var selection = "county";
 var year;
 var cache = {};
 
-var locurls = {
-	'county': './US_County_Level_Presidential_Results_04-16.csv',
-	'state': './US_State_Level_Presidential_Results_04-16.csv',
-	'demographic': './US_Demographic_Presidential_Results_04-16.csv'
-}
-
 // var locurls = {
-// 	'county': './US_County_Level_Presidential_Results_04-20.csv',
-// 	'state': './US_State_Level_Presidential_Results_04-20.csv',
+// 	'county': './US_County_Level_Presidential_Results_04-16.csv',
+// 	'state': './US_State_Level_Presidential_Results_04-16.csv',
 // 	'demographic': './US_Demographic_Presidential_Results_04-16.csv'
 // }
+
+var locurls = {
+	'county': './US_County_Level_Presidential_Results_04-20.csv',
+	'state': './US_State_Level_Presidential_Results_04-20.csv',
+	'demographic': './US_Demographic_Presidential_Results_04-16.csv'
+}
 
 var weburls = {
 	'county': 'https://raw.githubusercontent.com/psthomas/election-vis/master/US_County_Level_Presidential_Results_04-16.csv',
@@ -190,8 +192,7 @@ var weburls = {
 	'demographic': 'https://raw.githubusercontent.com/psthomas/election-vis/master/US_Demographic_Presidential_Results_04-16.csv'
 }
 
-var urls = weburls;
-//var urls = locurls; 
+var urls = weburls; //locurls;
 
 //Formatting Functions
 var pctFormat = d3.format(".2%");
@@ -271,7 +272,10 @@ var tooltip = d3.select("#formholder")
 	.style("visibility", "hidden")
 	.attr("class", "tooltip");
 
-d3.select('#inds').on("change", function () {
+//Adds event listener
+d3.select('#inds').on("change", dropdownRender);
+
+function dropdownRender() {
 	var sel = document.getElementById("inds");
 	selection = sel.options[sel.selectedIndex].value;  //Sets a global
 
@@ -296,8 +300,7 @@ d3.select('#inds').on("change", function () {
 			renderDemographic('education');
 			break;
 		}
-	});
-
+}
 
 // Helper functions: 
 function getYearData(dataset, year) {
@@ -318,7 +321,7 @@ function copyObj(original) {
 // 	return false;
 // });
 
-function reset() {
+function removeSearch() {
 	document.getElementById("myVal").value= ''; 
 	handleClick();
 }
@@ -1211,6 +1214,15 @@ function renderDemographic(group) {
 		var years = Object.keys(dataset).map(Number);
 		years.sort()
 		year = year ? year : years[0];
+
+		//No 2020 data demographic yet, so just return.
+		//probably a better way to handle this by redrawing the dropdown each year,
+		//but datasets are loaded separately to keep size down, so there's no way to look
+		//ahead to a different dataset until someone actually loads it and it's available
+		//during this build function. So just "fail" gracefully for now.
+		if (years.indexOf(year) == -1) {
+			return;
+		}
 
 		//Create a copy, so it can be edited on drag:
 		var yearData = copyObj(dataset[String(year)]);
